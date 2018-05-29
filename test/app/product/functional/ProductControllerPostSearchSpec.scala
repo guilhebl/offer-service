@@ -1,6 +1,7 @@
-package product.functional
+package app.product.functional
 
 import app.product.marketplace.amazon.AmazonRequestHelper
+import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
 import org.mockito.Matchers._
@@ -16,7 +17,6 @@ import play.api.mvc.Results.Ok
 import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplication, _}
-import product.util.MockBaseUtil._
 
 import scala.collection.mutable.HashMap
 import scala.io.Source

@@ -247,7 +247,7 @@ class WalmartRepositoryImpl @Inject()
         item.categoryPath,
         item.customerRating.getOrElse("0").toFloat,
         item.numReviews.getOrElse(0)),
-      filterHTMLTags(item.longDescription),
+      filterHtmlTags(item.longDescription),
       List[NameValue](),
       List[OfferDetailItem]())
 

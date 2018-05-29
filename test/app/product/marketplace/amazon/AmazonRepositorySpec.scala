@@ -3,6 +3,7 @@ package app.product.marketplace.amazon
 import app.product.marketplace.common.MarketplaceConstants._
 import app.product.marketplace.common.RequestMonitor
 import app.product.model.OfferDetail
+import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
 import org.junit.runner.RunWith
@@ -14,7 +15,6 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FunSuite, Matchers}
 import play.api.mvc.Results._
 import play.api.test.Helpers._
-import product.util.MockBaseUtil._
 
 import scala.collection.mutable.HashMap
 import scala.xml.XML

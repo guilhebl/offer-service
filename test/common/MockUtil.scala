@@ -1,4 +1,4 @@
-package product.util
+package common
 
 import akka.actor
 import akka.actor.ActorSystem

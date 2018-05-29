@@ -2,6 +2,7 @@ package app.product.marketplace.ebay
 
 import app.product.marketplace.common.MarketplaceConstants._
 import app.product.marketplace.common.RequestMonitor
+import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
 import org.junit.runner.RunWith
@@ -14,7 +15,6 @@ import org.scalatest.{FunSuite, Matchers}
 import play.api.libs.json.Json
 import play.api.mvc.Results._
 import play.api.test.Helpers._
-import product.util.MockBaseUtil._
 
 import scala.io.Source
 

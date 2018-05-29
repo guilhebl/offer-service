@@ -6,6 +6,7 @@ import app.product.marketplace.common.MarketplaceConstants._
 import app.product.marketplace.ebay.EbayRepository
 import app.product.marketplace.walmart.WalmartRepository
 import app.product.model.{ListRequest, ListSummary, OfferDetail, OfferList}
+import common.MockBaseUtil._
 import common.config.AppConfigService
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
@@ -14,7 +15,6 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
-import product.util.MockBaseUtil._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -28,8 +28,8 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
     /**
       * a template function for sort tests
       *
-      * @param sortBy
-      * @param sortOrder
+      * @param sortBy column to sort
+      * @param sortOrder order to sort
       * @return
       */
     def testSortBy(sortBy:String, sortOrder: String) : Option[OfferList] = {
@@ -68,7 +68,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
     /**
       * Validates default summary results
       *
-      * @param summary
+      * @param summary a list summary
       */
     def validateDefaultSummary(summary: ListSummary): Unit = {
       summary.page mustBe 1
@@ -247,8 +247,6 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       when(appConfigMock.properties) thenReturn testConfigProperties
 
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
-
-      val p = Map[String, String]()
 
       val response = service.search(new ListRequest())
 

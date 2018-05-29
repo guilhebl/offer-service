@@ -1,11 +1,7 @@
 package common.config
 
-import java.util.Base64
-
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
+import common.util.EncryptUtil._
 import javax.inject._
-import play.api.Logger
 
 trait AppConfigService {
   def properties: Map[String,String]
@@ -16,7 +12,6 @@ trait AppConfigService {
 @Singleton
 class AppConfigServiceImpl @Inject() extends AppConfigService {
   
-  private val logger = Logger(getClass)  
   private val propertiesMap: Map[String, String] = readProperties()
   
   private def readProperties(): Map[String, String] = {
@@ -34,45 +29,6 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
   def hostname:String = properties("protocol") + properties("host") + "/"  
   def imgFolderUri:String = hostname + "assets/images/"
   def proxyHostname:String = properties("protocol") + properties("proxyHost") + "/"	
-  
-  def encryptAES(s:String): String = {
-   try {
-       val key = properties("privateKeyAES")
-       val aesKey = new SecretKeySpec(key.getBytes(), "AES")
-       val cipher = Cipher.getInstance("AES")
-  
-       cipher.init(Cipher.ENCRYPT_MODE, aesKey)
-       val encrypted = cipher.doFinal(s.getBytes());
-       val r = Base64.getEncoder.encode(encrypted)
-       r.toString
-     } catch {
-       case e: Exception => 
-         logger.trace("error while generating SHA-256 hash" + e.getMessage)
-         ""       
-       case _: Exception => 
-         logger.trace("error while generating SHA-256 hash")
-         ""
-     }
-	}
-
-  def decryptAES(s:String): String = {        
-   try { 
-       val key = properties("privateKeyAES")
-       val aesKey = new SecretKeySpec(key.getBytes(), "AES")
-       val cipher = Cipher.getInstance("AES")
-       
-       cipher.init(Cipher.DECRYPT_MODE, aesKey);
-       val decrypted = new String(cipher.doFinal(Base64.getDecoder.decode(s)));
-       decrypted     
-     } catch {
-       case e: Exception => 
-         logger.trace("error while generating SHA-256 hash" + e.getMessage)
-         ""       
-       case _: Exception => 
-         logger.trace("error while generating SHA-256 hash")
-         ""
-     }
-	}
 
   /**
    * builds img from local assets folder
@@ -90,7 +46,7 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
   def buildImgUrlExternal(url:Option[String], proxyRequired:Boolean): String = {    
     url match {      
       case Some(v) => if (proxyRequired) {
-        val hash = encryptAES(v)        
+        val hash = encrypt(properties("privateKeyAES"), v)
         val localURLSecure = proxyHostname + "?hash=" + hash;
         localURLSecure
       } else {
