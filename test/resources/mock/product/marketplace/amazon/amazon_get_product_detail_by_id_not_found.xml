@@ -1,0 +1,39 @@
+<ItemLookupResponse xmlns="http://webservices.amazon.com/AWSECommerceService/2011-08-01">
+<OperationRequest>
+<HTTPHeaders>
+<Header Value="AHC/2.0" Name="UserAgent"/>
+</HTTPHeaders>
+<RequestId>8fa78968-7ce7-4c34-ba98-c51effebd976</RequestId>
+<Arguments>
+<Argument Value="test12345678" Name="AWSAccessKeyId"/>
+<Argument Value="test12345678" Name="AssociateTag"/>
+<Argument Value="ASIN" Name="IdType"/>
+<Argument Value="XYZ12345678" Name="ItemId"/>
+<Argument Value="ItemLookup" Name="Operation"/>
+<Argument Value="Images,ItemAttributes,Offers" Name="ResponseGroup"/>
+<Argument Value="AWSECommerceService" Name="Service"/>
+<Argument Value="2017-10-18T09:24:23Z" Name="Timestamp"/>
+<Argument Value="ZOUcT3kgP1JfCXd9vVS8VB9J+5MS4TC6xn62JBn4/jE=" Name="Signature"/>
+</Arguments>
+<RequestProcessingTime>0.0044874510000000</RequestProcessingTime>
+</OperationRequest>
+<Items>
+<Request>
+<IsValid>True</IsValid>
+<ItemLookupRequest>
+<IdType>ASIN</IdType>
+<ItemId>XYZ12345678</ItemId>
+<ResponseGroup>Images</ResponseGroup>
+<ResponseGroup>ItemAttributes</ResponseGroup>
+<ResponseGroup>Offers</ResponseGroup>
+<VariationPage>All</VariationPage>
+</ItemLookupRequest>
+<Errors>
+<Error>
+<Code>AWS.InvalidParameterValue</Code>
+<Message>XYZ12345678 is not a valid value for ItemId. Please change this value and retry your request.</Message>
+</Error>
+</Errors>
+</Request>
+</Items>
+</ItemLookupResponse>

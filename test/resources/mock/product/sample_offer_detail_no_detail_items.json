@@ -1,0 +1,23 @@
+{
+  "offer":{
+    "id":"1",
+    "upc":"upc1",
+    "name":"prod 1",
+    "partyName":"bestbuy.com",
+    "semanticName":"sem1",
+    "mainImageFileUrl":"http://localhost:5555/assets/images/image-placeholder.png",
+    "partyImageFileUrl":"http://localhost:5555/assets/images/best-buy-logo.png",
+    "price":55.55,
+    "productCategory":"laptops",
+    "rating":4.5,
+    "numReviews":100
+  },
+  "description":"The new MacBook Pro is faster and more powerful than before.",
+  "attributes":[
+    {
+      "name":"model",
+      "value":"Radeon Pro 455"
+    }
+  ],
+  "productDetailItems":[]
+}

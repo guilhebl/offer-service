@@ -1,0 +1,56 @@
+{  
+   "offer":{  
+      "id":"1",
+      "upc":"upc1",
+      "name":"prod 1",
+      "partyName":"pty 1",
+      "semanticName":"sem1",
+      "mainImageFileUrl":"http://localhost:5555/assets/images/image-placeholder.png",
+      "partyImageFileUrl":"http://localhost:5555/assets/images/best-buy-logo.png",
+      "price":55.55,
+      "productCategory":"laptops",
+      "rating":4.5,
+      "numReviews":100
+   },
+   "description":"The new MacBook Pro is faster and more powerful than before, yet remarkably thinner and lighter. It has the brightest, most colorful Mac notebook display ever. And it introduces the Touch Bar a Multi-Touch enabled strip of glass built into the keyboard for instant access to the tools you want, right when you want them. The Touch Bar replaces the function keys that have long occupied the top of your keyboard with something much more versatile and capable. Touch ID is available on a Mac, enabling instant access to logins and fast, secure online purchases with Apple Pay. The new MacBook Pro is built on groundbreaking ideas. The new MacBook Pro elevates the notebook to a whole new level of performance and portability. Wherever your ideas take you, you'll get there faster than ever with cutting-edge graphics, high-performance processors, state-of-the-art storage, and more.",
+   "attributes":[  
+      {  
+         "name":"model",
+         "value":"Radeon Pro 455"
+      }
+   ],
+   "productDetailItems":[  
+      {  
+         "partyName":"amazon.com",
+         "semanticName":"http://localhost",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/amazon-logo.png",
+         "price":2369.00,
+         "rating":4.70,
+         "numReviews":10
+      },
+      {  
+         "partyName":"bestbuy.com",
+         "semanticName":"http://localhost",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/best-buy-logo.png",
+         "price":2699.99,
+         "rating":3.70,
+         "numReviews":10
+      },
+      {  
+         "partyName":"ebay.com",
+         "semanticName":"http://localhost",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/ebay-logo.png",
+         "price":1025.00,
+         "rating":4.70,
+         "numReviews":10
+      },
+      {  
+         "partyName":"walmart.com",
+         "semanticName":"http://localhost",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/walmart-logo.png",
+         "price":2025.00,
+         "rating":3.20,
+         "numReviews":120
+      }
+   ]
+}

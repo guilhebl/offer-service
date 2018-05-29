@@ -1,0 +1,23 @@
+{
+  "offer":{
+    "id":"2",
+    "upc":"upc1",
+    "name":"prod 1",
+    "partyName":"pty 2",
+    "semanticName":"sem2",
+    "mainImageFileUrl":"http://localhost:5555/assets/images/image-placeholder-2.png",
+    "partyImageFileUrl":"http://localhost:5555/assets/images/pty2-logo.png",
+    "price":52.31,
+    "productCategory":"laptops",
+    "rating":3.1,
+    "numReviews":345
+  },
+  "description":"The new MacBook Pro is average.",
+  "attributes":[
+    {
+      "name":"model",
+      "value":"Rovax"
+    }
+  ],
+  "productDetailItems":[]
+}

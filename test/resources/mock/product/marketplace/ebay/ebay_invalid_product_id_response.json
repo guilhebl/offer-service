@@ -1,0 +1,44 @@
+{
+  "findItemsByProductResponse":[
+    {
+      "ack":[
+        "Failure"
+      ],
+      "errorMessage":[
+        {
+          "error":[
+            {
+              "errorId":[
+                "40"
+              ],
+              "domain":[
+                "Marketplace"
+              ],
+              "severity":[
+                "Error"
+              ],
+              "category":[
+                "Request"
+              ],
+              "message":[
+                "Invalid product reference ID. Product reference IDs must be in numeric format."
+              ],
+              "subdomain":[
+                "Search"
+              ],
+              "parameter":[
+                "abcxyz"
+              ]
+            }
+          ]
+        }
+      ],
+      "version":[
+        "1.13.0"
+      ],
+      "timestamp":[
+        "2017-10-04T07:21:03.601Z"
+      ]
+    }
+  ]
+}

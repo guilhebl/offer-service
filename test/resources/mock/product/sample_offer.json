@@ -1,0 +1,61 @@
+{  
+   "list":[  
+      {  
+         "id":"1",
+         "upc":"upc1",
+         "name":"prod 1",
+         "partyName":"amazon.com",
+         "semanticName":"sem1",
+         "mainImageFileUrl":"http://localhost:5555/assets/images/image-placeholder.png",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/best-buy-logo.png",
+         "price":55.55,
+         "productCategory":"laptops",
+         "rating":4.5,
+         "numReviews":100
+      },
+      {  
+         "id":"2",
+         "upc":"upc2",
+         "name":"Z Prod 2",
+         "partyName":"bestbuy.com",
+         "semanticName":"sem2",
+         "mainImageFileUrl":"http://localhost:5555/assets/images/image-placeholder.png",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/best-buy-logo.png",
+         "price":445.55,
+         "productCategory":"laptops",
+         "rating":2.55,
+         "numReviews":200
+      },
+      {  
+         "id":"3",
+         "upc":"upc3",
+         "name":"prod 3",
+         "partyName":"walmart.com",
+         "semanticName":"sem3",
+         "mainImageFileUrl":"http://localhost:5555/assets/images/image-placeholder.png",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/best-buy-logo.png",
+         "price":445.55,
+         "productCategory":"laptops",
+         "rating":3.55,
+         "numReviews":300
+      },
+      {
+         "id":"4",
+         "upc":"upc4",
+         "name":"A Prod 4",
+         "partyName":"ebay.com",
+         "semanticName":"sem4",
+         "mainImageFileUrl":"http://localhost:5555/assets/images/image-placeholder.png",
+         "partyImageFileUrl":"http://localhost:5555/assets/images/best-buy-logo.png",
+         "price":75.55,
+         "productCategory":"laptops",
+         "rating":7.55,
+         "numReviews":200
+      }
+   ],
+   "summary":{  
+      "page":1,
+      "pageCount":1,
+      "totalCount":4
+   }
+}
