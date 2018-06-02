@@ -22,10 +22,10 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "org.joda" % "joda-convert" % "1.9.2"
 libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.11"
-
 libraryDependencies += "com.netaporter" %% "scala-uri" % "0.4.16"
 libraryDependencies += "net.codingwell" %% "scala-guice" % "4.1.1"
 
+// test dependencies
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
 libraryDependencies += "io.gatling.highcharts" % "gatling-charts-highcharts" % gatlingVersion(scalaBinaryVersion.value) % Test
 libraryDependencies += "io.gatling" % "gatling-test-framework" % gatlingVersion(scalaBinaryVersion.value) % Test
@@ -34,7 +34,7 @@ libraryDependencies += "de.leanovate.play-mockws" %% "play-mockws" % "2.6.0" % T
 libraryDependencies += "org.mockito" % "mockito-all" % "1.9.5" % Test
 libraryDependencies += specs2 % Test
 
-libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.41"
+// libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.41"
 libraryDependencies += "commons-codec" % "commons-codec" % "1.3"
 
 // The Play project itself
@@ -57,8 +57,8 @@ lazy val docs = (project in file("docs")).enablePlugins(ParadoxPlugin).
 
 javaOptions in Universal ++= Seq(
   // JVM memory tuning
-  "-J-Xmx1024m",
-  "-J-Xms512m",
+  "-J-Xmx4096m",
+  "-J-Xms1024m",
 
   // Since play uses separate pidfile we have to provide it with a proper path
   // name of the pid file must be play.pid

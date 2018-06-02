@@ -1,7 +1,7 @@
 package common.config
 
-import common.util.EncryptUtil._
 import javax.inject._
+import common.encrypt.EncryptUtil._
 
 trait AppConfigService {
   def properties: Map[String,String]
@@ -46,8 +46,10 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
   def buildImgUrlExternal(url:Option[String], proxyRequired:Boolean): String = {    
     url match {      
       case Some(v) => if (proxyRequired) {
-        val hash = encrypt(properties("privateKeyAES"), v)
-        val localURLSecure = proxyHostname + "?hash=" + hash;
+        val pair = encryptAesGcm(properties("privateKeyAES"), v)
+        val hash = pair.get.encrypted
+        val nonce = pair.get.nonce
+        val localURLSecure = s"proxyHostname?hash=$hash&nonce=$nonce"
         localURLSecure
       } else {
         changeToHttpsUrl(v) // case when provider has an https available service just switch to that if not already https

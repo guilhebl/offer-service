@@ -14,6 +14,10 @@ object StringCommonUtil {
     s.exists(str => str == null || str.trim.isEmpty)
   }
 
+  def isBlank(s : String) : Boolean = {
+    s.trim.isEmpty
+  }
+
   /**
     * creates a list of tuples List[(String, Int)] which contains each keyword and its
     * respective count of number of matches found in the text.
