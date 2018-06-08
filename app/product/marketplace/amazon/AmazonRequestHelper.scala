@@ -1,4 +1,4 @@
-package app.product.marketplace.amazon
+package product.marketplace.amazon
 
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder

@@ -1,8 +1,8 @@
 package app.product.functional
 
-import app.product.marketplace.amazon.AmazonRequestHelper
 import common.MockBaseUtil._
 import common.config.AppConfigService
+import common.db.MongoRepository
 import mockws.MockWS
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
@@ -18,6 +18,7 @@ import play.api.libs.ws.WSClient
 import play.api.mvc.Results.Ok
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplication, _}
+import product.marketplace.amazon.AmazonRequestHelper
 
 import scala.collection.mutable.HashMap
 import scala.io.Source
@@ -52,9 +53,12 @@ class ProductControllerGetProductDetailNotFoundSpec extends PlaySpec with Mockit
   when(appConfigMock.buildImgUrl(Some(any[String]))) thenReturn "http://localhost:5555/assets/images/logo.png"
   when(appConfigMock.buildImgUrlExternal(Some(any[String]), any[Boolean])) thenReturn "https://localhost/images/I/51AdOmJ2vBL.jpg"
 
+  val mongoRepositoryMock = mock[MongoRepository]
+
   val appMock = new GuiceApplicationBuilder()
     .overrides(bind[AppConfigService].toInstance(appConfigMock))
     .overrides(bind[AmazonRequestHelper].toInstance(amazonRequestHelperMock))
+    .overrides(bind[MongoRepository].toInstance(mongoRepositoryMock))
     .overrides(bind[WSClient].toInstance(ws))
     .build
 
@@ -65,7 +69,7 @@ class ProductControllerGetProductDetailNotFoundSpec extends PlaySpec with Mockit
     json2 mustBe JsNull
   }
 
-  "get app.product by Id NotFound should return None for all marketplace providers" in new WithApplication(appMock) with WsTestClient {
+  "get product by Id NotFound should return None for all marketplace providers" in new WithApplication(appMock) with WsTestClient {
     expectResultEmpty(app, "/products/12345678?idType=id&source=walmart.com")
     expectResultEmpty(app, "/products/12345678?idType=id&source=ebay.com")
     expectResultEmpty(app, "/products/12345678?idType=id&source=amazon.com")

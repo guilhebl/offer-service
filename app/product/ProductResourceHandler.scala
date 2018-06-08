@@ -1,8 +1,8 @@
 package product
 
-import app.product.model._
 import javax.inject.Inject
 import play.api.MarkerContext
+import product.model._
 
 import scala.concurrent.{ExecutionContext, Future}
 

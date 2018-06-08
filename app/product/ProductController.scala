@@ -1,10 +1,10 @@
 package product
 
-import app.product.model.{ListRequest, NameValue}
 import javax.inject.Inject
 import play.api.data.Form
 import play.api.libs.json.Json
 import play.api.mvc._
+import product.model.{ListRequest, NameValue}
 
 import scala.concurrent.{ExecutionContext, Future}
 

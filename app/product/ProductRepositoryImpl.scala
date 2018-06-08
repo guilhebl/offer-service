@@ -1,10 +1,10 @@
 package product
 
-import app.product.marketplace.common.MarketplaceRepository
-import app.product.model.{ListRequest, OfferDetail, OfferList}
 import common.executor.RepositoryDispatcherContext
 import javax.inject.{Inject, Singleton}
 import play.api.MarkerContext
+import product.marketplace.common.MarketplaceRepository
+import product.model.{ListRequest, OfferDetail, OfferList}
 
 import scala.concurrent.Future
 

@@ -1,9 +1,5 @@
-package app.product.marketplace.walmart
+package product.marketplace.walmart
 
-import app.product.marketplace.common.MarketplaceConstants._
-import app.product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
-import app.product.marketplace.walmart.model.{WalmartSearchBaseResponse, WalmartSearchItem, WalmartSearchResponse, WalmartTrendingSearchResponse}
-import app.product.model._
 import common.config.AppConfigService
 import common.executor.WorkerDispatcherContext
 import common.log.ThreadLogger
@@ -12,6 +8,10 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
+import product.marketplace.common.MarketplaceConstants._
+import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
+import product.marketplace.walmart.model.{WalmartSearchBaseResponse, WalmartSearchItem, WalmartSearchResponse, WalmartTrendingSearchResponse}
+import product.model._
 
 import scala.collection.mutable.HashMap
 import scala.concurrent.Future

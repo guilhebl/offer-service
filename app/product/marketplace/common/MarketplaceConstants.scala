@@ -1,4 +1,4 @@
-package app.product.marketplace.common
+package product.marketplace.common
 
 object MarketplaceConstants {
   val Name = "name"

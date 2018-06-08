@@ -1,4 +1,4 @@
-package app.product.marketplace.bestbuy.model
+package product.marketplace.bestbuy.model
 
 import play.api.libs.json._
 

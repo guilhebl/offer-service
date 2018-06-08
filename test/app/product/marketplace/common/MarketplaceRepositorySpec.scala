@@ -1,13 +1,8 @@
 package app.product.marketplace.common
 
-import app.product.marketplace.amazon.AmazonRepository
-import app.product.marketplace.bestbuy.BestBuyRepository
-import app.product.marketplace.common.MarketplaceConstants._
-import app.product.marketplace.ebay.EbayRepository
-import app.product.marketplace.walmart.WalmartRepository
-import app.product.model.{ListRequest, ListSummary, OfferDetail, OfferList}
 import common.MockBaseUtil._
 import common.config.AppConfigService
+import common.db.MongoRepository
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -15,6 +10,13 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
+import product.marketplace.amazon.AmazonRepository
+import product.marketplace.bestbuy.BestBuyRepository
+import product.marketplace.common.MarketplaceConstants._
+import product.marketplace.common.MarketplaceRepositoryImpl
+import product.marketplace.ebay.EbayRepository
+import product.marketplace.walmart.WalmartRepository
+import product.model.{ListRequest, ListSummary, OfferDetail, OfferList}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -47,10 +49,12 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
 
       val repositoryDispatcher = getMockExecutionContext
 
+      val mongoRepositoryMock = mock[MongoRepository]
+
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.search(new ListRequest(Seq.empty, Some(sortBy), Some(sortOrder), Some(1), Some(10)))
 
@@ -92,12 +96,15 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val amazonMock = mock[AmazonRepository]
       when(amazonMock.search(any[Map[String, String]])) thenReturn Future.successful(Some(getProductList))
 
+      val mongoRepositoryMock = mock[MongoRepository]
+      
+
       val repositoryDispatcher = getMockExecutionContext
 
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val req = new ListRequest()
       val response = service.search(req)
@@ -205,7 +212,10 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val mongoRepositoryMock = mock[MongoRepository]
+      
+
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.search(new ListRequest())
 
@@ -246,7 +256,10 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val mongoRepositoryMock = mock[MongoRepository]
+      
+
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.search(new ListRequest())
 
@@ -289,7 +302,10 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val mongoRepositoryMock = mock[MongoRepository]
+      
+
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("1", Id, BestBuy, None)
 
@@ -338,10 +354,13 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
 
+      val mongoRepositoryMock = mock[MongoRepository]
+      
+
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("1", Id, BestBuy, None)
 
@@ -388,7 +407,10 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val mongoRepositoryMock = mock[MongoRepository]
+      
+
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("1", Id, BestBuy, None)
 
@@ -412,11 +434,12 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
+      val mongoRepositoryMock = mock[MongoRepository]
 
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("", Id, BestBuy, None)
 
@@ -438,11 +461,12 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
+      val mongoRepositoryMock = mock[MongoRepository]
 
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("1", "", BestBuy, None)
 
@@ -464,11 +488,12 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
+      val mongoRepositoryMock = mock[MongoRepository]
 
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("1", Id, "", None)
 
@@ -490,11 +515,12 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
+      val mongoRepositoryMock = mock[MongoRepository]
 
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("1", "XYZ", BestBuy, None)
 
@@ -516,11 +542,12 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
+      val mongoRepositoryMock = mock[MongoRepository]
 
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock)(repositoryDispatcher)
+      val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock)(repositoryDispatcher)
 
       val response = service.getProductDetail("1", Id, "XYZ", None)
 

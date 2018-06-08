@@ -1,4 +1,4 @@
-package app.product.marketplace.walmart.model
+package product.marketplace.walmart.model
 
 import java.util.Date
 

@@ -1,4 +1,4 @@
-package app.product.marketplace.ebay.model
+package product.marketplace.ebay.model
 
 import play.api.libs.json._
 

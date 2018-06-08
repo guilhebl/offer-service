@@ -2,7 +2,7 @@
 
 Searchprod offer-service (AKA Offer-backend) is an open source project that aims to bring together several world-wide marketplaces and provide best offers and results in a single consolidated platform.
 It's goal is to unify diverse market sources in order to connect people directly with products and services that they need through a global marketplace platform.
-Connecting users to local and international marketplaces and enabling the consumer to receive informative insights of a app.product or service in a transparent manner.
+Connecting users to local and international marketplaces and enabling the consumer to receive informative insights of a product or service in a transparent manner.
 Find out about prices, availability, features, reviews and more searching in one place and receiving the best results from multiple sources.
 Join the project and help make the world a better place for trade.
 
@@ -144,3 +144,16 @@ Install service to be run at boot-time:
 To check service logs:
 
 ```journalctl -u api-service -b```
+
+### Mongo DB Integration
+
+To install MongoDb follow [instructions](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/)
+
+To access Mongo Shell run:
+
+```mongo```
+
+To list Dbs: ```show dbs```
+
+To Query offer collections: 
+```use searchprod```

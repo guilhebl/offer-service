@@ -1,12 +1,9 @@
-package app.product.marketplace.common
+package product.marketplace.common
 
-import app.product.marketplace.amazon.AmazonRepository
-import app.product.marketplace.bestbuy.BestBuyRepository
-import app.product.marketplace.common.MarketplaceConstants._
-import app.product.marketplace.ebay.EbayRepository
-import app.product.marketplace.walmart.WalmartRepository
-import app.product.model._
+import java.util.Calendar
+
 import common.config.AppConfigService
+import common.db.MongoRepository
 import common.executor.RepositoryDispatcherContext
 import common.log.ThreadLogger
 import common.util.CollectionUtil._
@@ -14,6 +11,12 @@ import common.util.EntityValidationUtil._
 import common.util.StringCommonUtil._
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import product.marketplace.amazon.AmazonRepository
+import product.marketplace.bestbuy.BestBuyRepository
+import product.marketplace.common.MarketplaceConstants._
+import product.marketplace.ebay.EbayRepository
+import product.marketplace.walmart.WalmartRepository
+import product.model._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -31,7 +34,7 @@ trait MarketplaceRepository {
 @Singleton
 class MarketplaceRepositoryImpl @Inject()
 (appConfigService: AppConfigService, walmartRepository: WalmartRepository, bestbuyRepository: BestBuyRepository,
- ebayRepository: EbayRepository, amazonRepository: AmazonRepository)
+ ebayRepository: EbayRepository, amazonRepository: AmazonRepository, mongoDbRepository: MongoRepository)
 (implicit ec: RepositoryDispatcherContext) extends MarketplaceRepository {
   
   private val logger = Logger(this.getClass)
@@ -58,12 +61,28 @@ class MarketplaceRepositoryImpl @Inject()
         val l = x.foldLeft(emptyList)((r,c) => {
           if (c.isSuccess) mergeResponses(r, c.get) else r
         })
-        sortList(l, country, params.getOrElse(Name, ""), req.sortColumn.getOrElse(""), req.sortOrder.getOrElse("").equals("asc"))
+        val sorted = sortList(l, country, params.getOrElse(Name, ""), req.sortColumn.getOrElse(""), req.sortOrder.getOrElse("").equals("asc"))
+        insertIntoDb(sorted)
+        sorted
       }
     }
   }
 
-  private def sortList(offerList: Option[OfferList], country : String, keyword : String, sortBy : String, asc : Boolean) : Option[OfferList] = {
+  /**
+    * check if DB is enabled and saves record
+    * @param item
+    */
+  private def insertIntoDb(item: Option[OfferList]) : Unit = {
+    val cal = Calendar.getInstance()
+
+    if (appConfigService.properties("db.enabled").toBoolean && item.isDefined) {
+      val list = item.get.list.map(OfferLog(_, cal.getTimeInMillis))
+      val documents = list.map(OfferLog.entityToDocumentConverterMongo).toSeq
+      mongoDbRepository.insertMany(documents)
+    }
+  }
+
+  private def sortList(offerList: Option[OfferList], country : String, keyword : String, sortBy : String, asc : Boolean): Option[OfferList] = {
     if (!offerList.isDefined) return None
 
     // return a new Sorted OfferList Option
@@ -240,7 +259,7 @@ class MarketplaceRepositoryImpl @Inject()
   }
 
   /**
-   * fetch app.product detail items from sources different than source (competitors other than original app.product source)
+   * fetch product detail items from sources different than source (competitors other than original product source)
    */
   private def getProductDetailItems(detail : Option[OfferDetail], idType : String, country : Option[String]) : Future[Option[OfferDetail]] = {
     if (!detail.isDefined || !detail.get.offer.upc.isDefined || isBlank(detail.get.offer.upc)) {

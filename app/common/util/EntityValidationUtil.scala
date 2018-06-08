@@ -1,6 +1,6 @@
 package common.util
 
-import app.product.marketplace.common.MarketplaceConstants._
+import product.marketplace.common.MarketplaceConstants._
 
 object EntityValidationUtil {
   def isValidCountry(c : String) : Boolean = {

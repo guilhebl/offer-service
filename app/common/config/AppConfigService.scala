@@ -1,7 +1,7 @@
 package common.config
 
-import javax.inject._
 import common.encrypt.EncryptUtil._
+import javax.inject._
 
 trait AppConfigService {
   def properties: Map[String,String]
@@ -42,17 +42,16 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
 
   /**
    * builds an img source from an external server should proxy if http is used to avoid security warns (MIXED MODE)
+   * in case when provider has an https available service just switch to that if not already https
    */
-  def buildImgUrlExternal(url:Option[String], proxyRequired:Boolean): String = {    
+  def buildImgUrlExternal(url:Option[String], proxyRequired:Boolean): String = {
     url match {      
-      case Some(v) => if (proxyRequired) {
-        val pair = encryptAesGcm(properties("privateKeyAES"), v)
-        val hash = pair.get.encrypted
-        val nonce = pair.get.nonce
-        val localURLSecure = s"proxyHostname?hash=$hash&nonce=$nonce"
+      case Some(urlString) => if (proxyRequired) {
+        val enc = encryptAES(properties("privateKeyAES"), urlString)
+        val localURLSecure = s"proxyHostname?hash=$enc"
         localURLSecure
       } else {
-        changeToHttpsUrl(v) // case when provider has an https available service just switch to that if not already https
+        changeToHttpsUrl(urlString)
       }
       case _ => imgFolderUri + "image-placeholder.png"
     }

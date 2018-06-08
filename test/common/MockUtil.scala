@@ -3,10 +3,10 @@ package common
 import akka.actor
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import app.product.model.{OfferDetail, OfferList}
 import common.executor.{RepositoryDispatcherContext, WorkerDispatcherContext}
 import play.api.libs.json.Json
 import play.api.mvc.{DefaultActionBuilder, PlayBodyParsers}
+import product.model.{OfferDetail, OfferList}
 
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.duration.Duration

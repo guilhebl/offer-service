@@ -10,7 +10,7 @@ import play.api.{Logger, MarkerContext}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * A wrapped request for app.product resources.
+  * A wrapped request for product resources.
   *
   * This is commonly used to hold request-specific information like
   * security credentials, and useful shortcut methods.
@@ -57,7 +57,7 @@ class ProductActionBuilder @Inject()(messagesApi: MessagesApi, playBodyParsers: 
 }
 
 /**
- * Packages up the component dependencies for the app.product controller.
+ * Packages up the component dependencies for the product controller.
  *
  * This is a good way to minimize the surface area exposed to the controller, so the
  * controller only has to have one thing injected.

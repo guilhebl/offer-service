@@ -1,11 +1,11 @@
-package app.product.marketplace.common
+package product.marketplace.common
 
 import java.util.Date
 
-import app.product.marketplace.common.MarketplaceConstants.{Amazon, BestBuy, Ebay, Walmart}
 import common.config.AppConfigService
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import product.marketplace.common.MarketplaceConstants.{Amazon, BestBuy, Ebay, Walmart}
 
 import scala.collection.mutable.HashMap
 

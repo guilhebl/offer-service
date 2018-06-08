@@ -1,6 +1,6 @@
-package app.product.marketplace.common
+package product.marketplace.common
 
-import app.product.model.{OfferDetail, OfferList}
+import product.model.{OfferDetail, OfferList}
 
 import scala.concurrent.Future
 

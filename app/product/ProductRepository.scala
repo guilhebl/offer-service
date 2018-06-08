@@ -1,7 +1,7 @@
 package product
 
-import app.product.model.{ListRequest, OfferDetail, OfferList}
 import play.api.MarkerContext
+import product.model.{ListRequest, OfferDetail, OfferList}
 
 import scala.concurrent.Future
 

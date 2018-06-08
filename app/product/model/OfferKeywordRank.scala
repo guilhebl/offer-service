@@ -1,4 +1,4 @@
-package app.product.model
+package product.model
 
 /**
   * Captures keyword matches in this offer

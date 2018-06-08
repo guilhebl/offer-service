@@ -1,9 +1,5 @@
-package app.product.marketplace.bestbuy
+package product.marketplace.bestbuy
 
-import app.product.marketplace.bestbuy.model._
-import app.product.marketplace.common.MarketplaceConstants._
-import app.product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
-import app.product.model._
 import common.config.AppConfigService
 import common.executor.WorkerDispatcherContext
 import common.log.ThreadLogger
@@ -11,6 +7,10 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
+import product.marketplace.bestbuy.model._
+import product.marketplace.common.MarketplaceConstants._
+import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
+import product.model._
 
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.concurrent.Future
@@ -65,9 +65,8 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
       val futureResult: Future[Option[BestBuySearchResponse]] = req
         .get()
-        .map { response =>
-          {
-            val resp = (response.json).validate[BestBuySearchResponse]
+        .map { response => {
+            val resp = response.json.validate[BestBuySearchResponse]
             resp match {
               case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
               case e: JsError => {
@@ -78,12 +77,10 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
           }
         }
 
-      futureResult.map(r => {
-        r match {
-          case Some(entity) => buildList(entity, pageSize)
-          case _ => None
-        }
-      })
+      futureResult.map {
+       case Some(entity) => buildList(entity, pageSize)
+       case _ => None
+      }
 
     } else {
       // picks up trending products if no search query present
@@ -99,9 +96,8 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
       val futureResult: Future[Option[BestBuyTrendingResponse]] = req
         .get()
-        .map { response =>
-          {
-            val resp = (response.json).validate[BestBuyTrendingResponse]
+        .map { response => {
+            val resp = response.json.validate[BestBuyTrendingResponse]
             resp match {
               case s: JsSuccess[BestBuyTrendingResponse] => Some(s.get)
               case e: JsError => {
@@ -112,12 +108,10 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
           }
         }
 
-      futureResult.map(r => {
-        r match {
-          case Some(entity) => buildList(entity)
-          case _ => None
-        }
-      })
+      futureResult.map {
+        case Some(entity) => buildList(entity)
+        case _ => None
+      }
     }
   }
 
@@ -160,9 +154,8 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
     val futureResult: Future[Option[BestBuySearchResponse]] = req
       .get()
-      .map { response =>
-        {
-          val resp = (response.json).validate[BestBuySearchResponse]
+      .map { response => {
+          val resp = response.json.validate[BestBuySearchResponse]
           resp match {
             case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
             case e: JsError => {
@@ -173,12 +166,10 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
         }
       }
 
-    futureResult.map(r => {
-      r match {
-        case Some(entity) => buildProductDetail(entity)
-        case _ => None
-      }
-    })
+    futureResult.map {
+      case Some(entity) => buildProductDetail(entity)
+      case _ => None
+    }
   }
 
   private def buildProductDetail(item: ProductItem): Option[OfferDetail] = {
@@ -296,6 +287,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
         item.customerReviews.count.getOrElse(0)
       )
     })
+
     list
   }
 

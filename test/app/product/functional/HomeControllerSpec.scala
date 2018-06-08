@@ -1,8 +1,8 @@
 package app.product.functional
 
-import app.product.marketplace.amazon.AmazonRequestHelper
 import common.MockBaseUtil._
 import common.config.AppConfigService
+import common.db.MongoRepository
 import mockws.MockWS
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -15,6 +15,7 @@ import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import play.api.mvc.Results.Ok
 import play.api.test.Helpers.GET
+import product.marketplace.amazon.AmazonRequestHelper
 
 import scala.collection.mutable.HashMap
 import scala.io.Source
@@ -43,12 +44,17 @@ class HomeControllerSpec extends PlaySpec with GuiceOneServerPerSuite with OneBr
   val amazonRequestHelperMock = mock[AmazonRequestHelper]
   when(amazonRequestHelperMock.sign(any[String], any[String], any[String], any[HashMap[String,String]])) thenReturn "https://webservices.amazon.com/signed"
 
+  val mongoRepositoryMock = mock[MongoRepository]
+
   val appConfigMock = mock[AppConfigService]
   when(appConfigMock.properties) thenReturn testConfigProperties
+  when(appConfigMock.buildImgUrl(Some(any[String]))) thenReturn "https://localhost:5555/assets/images/product-img.png"
+  when(appConfigMock.buildImgUrlExternal(Some(any[String]), any[Boolean])) thenReturn "https://localhost:5555/assets/images/product-img-01.jpg"
 
   override def fakeApplication() = new GuiceApplicationBuilder()
     .overrides(bind[AppConfigService].toInstance(appConfigMock))
     .overrides(bind[AmazonRequestHelper].toInstance(amazonRequestHelperMock))
+    .overrides(bind[MongoRepository].toInstance(mongoRepositoryMock))
     .overrides(bind[WSClient].toInstance(ws))
     .build
 
