@@ -54,17 +54,17 @@ class MarketplaceRepositoryImpl @Inject()
 
     val result = waitAll(futures)
 
-    val emptyList = Option(new OfferList(Vector.empty, new ListSummary(0,0,0)))
-    
-    result.map {
-      case x => {
+    val emptyList = Option(OfferList(Vector.empty, ListSummary(0,0,0)))
+
+    result.map { x =>
         val l = x.foldLeft(emptyList)((r,c) => {
           if (c.isSuccess) mergeResponses(r, c.get) else r
         })
-        val sorted = sortList(l, country, params.getOrElse(Name, ""), req.sortColumn.getOrElse(""), req.sortOrder.getOrElse("").equals("asc"))
+        val sorted = sortList(l, country,
+          params.getOrElse(Name, ""), req.sortColumn.getOrElse(""),
+          req.sortOrder.getOrElse("").equals("asc"))
         insertIntoDb(sorted)
         sorted
-      }
     }
   }
 

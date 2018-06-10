@@ -2,6 +2,7 @@ package product.model
 
 import org.mongodb.scala.Document
 import play.api.libs.json._
+import scala.language.implicitConversions
 
 case class Offer(
     id: String,
