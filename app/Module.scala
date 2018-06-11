@@ -1,4 +1,5 @@
 import com.google.inject.AbstractModule
+import common.cache.{RedisCacheService, RedisCacheServiceImpl}
 import common.config.{AppConfigService, AppConfigServiceImpl}
 import common.db.{MongoRepository, MongoRepositoryImpl}
 import geo.{GeolocationRepository, GeolocationRepositoryImpl}
@@ -31,5 +32,6 @@ class Module(environment: Environment, configuration: Configuration)
     bind[AmazonRepository].to[AmazonRepositoryImpl].in[Singleton]
     bind[AmazonRequestHelper].to[AmazonRequestHelperImpl].in[Singleton]
     bind[MongoRepository].to[MongoRepositoryImpl].in[Singleton]
+    bind[RedisCacheService].to[RedisCacheServiceImpl].in[Singleton]
   }
 }

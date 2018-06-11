@@ -2,6 +2,7 @@ package product.marketplace.common
 
 import java.util.Calendar
 
+import common.cache.RedisCacheService
 import common.config.AppConfigService
 import common.db.MongoRepository
 import common.executor.RepositoryDispatcherContext
@@ -11,6 +12,7 @@ import common.util.EntityValidationUtil._
 import common.util.StringCommonUtil._
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import play.api.libs.json.Json
 import product.marketplace.amazon.AmazonRepository
 import product.marketplace.bestbuy.BestBuyRepository
 import product.marketplace.common.MarketplaceConstants._
@@ -34,7 +36,7 @@ trait MarketplaceRepository {
 @Singleton
 class MarketplaceRepositoryImpl @Inject()
 (appConfigService: AppConfigService, walmartRepository: WalmartRepository, bestbuyRepository: BestBuyRepository,
- ebayRepository: EbayRepository, amazonRepository: AmazonRepository, mongoDbRepository: MongoRepository)
+ ebayRepository: EbayRepository, amazonRepository: AmazonRepository, mongoDbRepository: MongoRepository, cache: RedisCacheService)
 (implicit ec: RepositoryDispatcherContext) extends MarketplaceRepository {
   
   private val logger = Logger(this.getClass)
@@ -47,6 +49,19 @@ class MarketplaceRepositoryImpl @Inject()
     logger.info(s"Marketplace search - request: $req")
     ThreadLogger.log("Marketplace search")
 
+    // build request key
+    val requestKey = Json.prettyPrint(Json.toJson(req))
+
+    // check cache
+    if (appConfigService.properties("cache.enabled").toBoolean) {
+      logger.info(s"cache get: - $requestKey")
+      val json = cache.get(requestKey)
+      if (json.isDefined) {
+        logger.info("cache hit")
+        return Future.successful{ Some(Json.parse(json.get).as[OfferList]) }
+      }
+    }
+
     val params = req.searchColumns.map(x => (x.name, x.value)).toMap
     val country = if (params.contains(Country) && isValidCountry(params(Country))) params(Country) else UnitedStates
     val providers = getMarketplaceProvidersByCountry(country)
@@ -57,33 +72,45 @@ class MarketplaceRepositoryImpl @Inject()
     val emptyList = Option(OfferList(Vector.empty, ListSummary(0,0,0)))
 
     result.map { x =>
-        val l = x.foldLeft(emptyList)((r,c) => {
-          if (c.isSuccess) mergeResponses(r, c.get) else r
-        })
-        val sorted = sortList(l, country,
-          params.getOrElse(Name, ""), req.sortColumn.getOrElse(""),
-          req.sortOrder.getOrElse("").equals("asc"))
-        insertIntoDb(sorted)
-        sorted
+      val l = x.foldLeft(emptyList)((r,c) => { if (c.isSuccess) mergeResponses(r, c.get) else r })
+      val response = buildResponse(requestKey, l, country,
+        params.getOrElse(Name, ""), req.sortColumn.getOrElse(""),
+        req.sortOrder.getOrElse("").equals("asc"))
+      response
     }
+  }
+
+  private def buildResponse(requestKey: String, offerList: Option[OfferList], country : String, keyword : String, sortBy : String, asc : Boolean): Option[OfferList] = {
+    val sorted = sortList(offerList, country, keyword, sortBy, asc)
+    if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertIntoDb(sorted.get)
+    if (appConfigService.properties("cache.enabled").toBoolean && sorted.isDefined) insertIntoCache(requestKey, sorted.get)
+    sorted
   }
 
   /**
     * check if DB is enabled and saves record
     * @param item
     */
-  private def insertIntoDb(item: Option[OfferList]) : Unit = {
+  private def insertIntoDb(item: OfferList) : Unit = {
     val cal = Calendar.getInstance()
+    val list = item.list.map(OfferLog(_, cal.getTimeInMillis))
+    val documents = list.map(OfferLog.entityToDocumentConverterMongo).toSeq
+    mongoDbRepository.insertMany(documents)
+  }
 
-    if (appConfigService.properties("db.enabled").toBoolean && item.isDefined) {
-      val list = item.get.list.map(OfferLog(_, cal.getTimeInMillis))
-      val documents = list.map(OfferLog.entityToDocumentConverterMongo).toSeq
-      mongoDbRepository.insertMany(documents)
-    }
+  /**
+    * check if cache is enabled and saves record inside in-memory cache (redis)
+    * @param item
+    */
+  private def insertIntoCache(requestKey: String, item: OfferList) : Unit = {
+    logger.info(s"cache set: $requestKey")
+    val obj = Json.toJson(item).toString()
+    val savedResult = cache.set(requestKey, obj)
+    if (!savedResult) logger.info("couldn't save in cache!")
   }
 
   private def sortList(offerList: Option[OfferList], country : String, keyword : String, sortBy : String, asc : Boolean): Option[OfferList] = {
-    if (!offerList.isDefined) return None
+    if (offerList.isEmpty) return None
 
     // return a new Sorted OfferList Option
     val list = offerList.get.list.toSeq
@@ -193,6 +220,13 @@ class MarketplaceRepositoryImpl @Inject()
     if (isBlank(Some(id)) || !isValidMarketplaceIdType(idType) || isBlank(Some(source))) return Future.successful(None)
     val c = if (country.isDefined && isValidCountry(country.get)) country.get else UnitedStates
 
+    // check cache
+    if (appConfigService.properties("cache.enabled").toBoolean) {
+      logger.info(s"cache get: $id")
+      val json = cache.get(id)
+      if (json.isDefined) return Future.successful{ Some(Json.parse(json.get).as[OfferDetail]) }
+    }
+
     val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
     val future = fetchProductDetail(id, idType, source, Some(c)).map {
       detail => getProductDetailItems(detail, Upc, Some(c))
@@ -223,8 +257,8 @@ class MarketplaceRepositoryImpl @Inject()
   private def mergeResponses(response : Option[OfferList], response2 : Option[OfferList]): Option[OfferList] = {
     ThreadLogger.log("Marketplace mergeResponse")
 
-    if (!response.isDefined) return None
-    if (!response2.isDefined) return response
+    if (response.isEmpty) return None
+    if (response2.isEmpty) return response
 
     val page = if (response.get.summary.page == 0) response2.get.summary.page else response.get.summary.page
 
@@ -236,8 +270,8 @@ class MarketplaceRepositoryImpl @Inject()
   }
   
   private def mergeResponseProductDetail(response : Option[OfferDetail], response2 : Option[OfferDetail]): Option[OfferDetail] = {
-    if (!response.isDefined) return None
-    if (!response2.isDefined) return response
+    if (response.isEmpty) return None
+    if (response2.isEmpty) return response
 
     val item1 = response.get
     val item = response2.get
@@ -258,11 +292,22 @@ class MarketplaceRepositoryImpl @Inject()
     ))
   }
 
+  private def buildDetailResponse(r: Option[OfferDetail]): Option[OfferDetail] = {
+    if (appConfigService.properties("cache.enabled").toBoolean && r.isDefined) {
+      val id = r.get.offer.id
+      logger.info(s"cache set: $id")
+      val obj = Json.toJson(r.get).toString()
+      val savedResult = cache.set(id, obj)
+      if (!savedResult) logger.info("couldn't save GET in cache!")
+    }
+    r
+  }
+
   /**
    * fetch product detail items from sources different than source (competitors other than original product source)
    */
   private def getProductDetailItems(detail : Option[OfferDetail], idType : String, country : Option[String]) : Future[Option[OfferDetail]] = {
-    if (!detail.isDefined || !detail.get.offer.upc.isDefined || isBlank(detail.get.offer.upc)) {
+    if (detail.isEmpty || detail.get.offer.upc.isEmpty || isBlank(detail.get.offer.upc)) {
       return Future.successful(detail)
     }
 
@@ -274,9 +319,10 @@ class MarketplaceRepositoryImpl @Inject()
           val listFutures = for (provider <- providers if !provider.equals(detail.get.offer.partyName)) yield fetchProductDetail(upc, Upc, provider, country)
           val response = waitAll(listFutures)
           response.map { x => {
-              x.foldLeft(detail)((r, c) => {
+              val r = x.foldLeft(detail)((r, c) => {
                 if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r
               })
+              buildDetailResponse(r)
             }
           }
       }
