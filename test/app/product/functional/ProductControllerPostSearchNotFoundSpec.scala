@@ -40,7 +40,7 @@ class ProductControllerPostSearchNotFoundSpec extends PlaySpec with MockitoSugar
       Ok(XML.loadFile(s"$MockMarketplaceFilesPath/amazon/amazon_sample_search_no_results.xml"))
     }
 
-    case (GET, "https://api.bestbuy.com/v1/products(search=skyrim)") => actionBuilder {
+    case (GET, "https://api.bestbuy.com/v1/products(search=abc123)") => actionBuilder {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/bestbuy/best_buy_search_no_results.json").getLines.mkString))
     }
   }
@@ -64,10 +64,10 @@ class ProductControllerPostSearchNotFoundSpec extends PlaySpec with MockitoSugar
 
   "search by keyword no results should return Total results zero" in new WithApplication(appMock) with WsTestClient {
     val request = FakeRequest(POST, "/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(
-      Json.parse(Source.fromFile(s"$MockFilesPath/sample_search_request.json").getLines.mkString))
+      Json.parse(Source.fromFile(s"$MockFilesPath/sample_search_request_not_found.json").getLines.mkString))
     val response = route(app, request).get
     val json = contentAsJson(response)
-    val summary = (json \ "summary")
+    val summary = json \ "summary"
 
     status(response) mustBe OK
     (summary \ "page").as[Int] mustBe 0

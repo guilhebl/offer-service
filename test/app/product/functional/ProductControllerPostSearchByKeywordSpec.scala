@@ -45,6 +45,8 @@ class ProductControllerPostSearchByKeywordSpec extends PlaySpec with MockitoSuga
     }
   }
 
+  val jsonRequest = Json.parse(Source.fromFile(s"$MockFilesPath/sample_search_request.json").getLines.mkString)
+
   val amazonRequestHelperMock = mock[AmazonRequestHelper]
   when(amazonRequestHelperMock.sign(any[String], any[String], any[String], any[HashMap[String,String]])) thenReturn "https://webservices.amazon.com/signed"
 
@@ -64,13 +66,13 @@ class ProductControllerPostSearchByKeywordSpec extends PlaySpec with MockitoSuga
 
   "search by keyword" in new WithApplication(appMock) with WsTestClient {
 
-    val request = FakeRequest(POST, "/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(
-      Json.parse(Source.fromFile(s"$MockFilesPath/sample_search_request.json").getLines.mkString))
+    val request = FakeRequest(POST, "/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(jsonRequest)
     val response = route(app, request).get
     val json = contentAsJson(response)
+
     val elem0 = (json \ "list")(0)
     val elem1 = (json \ "list")(1)
-    val summary = (json \ "summary")
+    val summary = json \ "summary"
 
     status(response) mustBe OK
     (summary \ "page").as[Int] mustBe 1

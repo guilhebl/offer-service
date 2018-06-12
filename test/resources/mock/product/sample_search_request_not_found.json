@@ -1,0 +1,12 @@
+{
+  "searchColumns":[
+    {
+      "name":"name",
+      "value":"abc123"
+    }
+  ],
+  "sortColumn":"",
+  "sortOrder":"",
+  "page":1,
+  "rowsPerPage":10
+}

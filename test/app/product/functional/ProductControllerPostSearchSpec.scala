@@ -72,7 +72,7 @@ class ProductControllerPostSearchSpec extends PlaySpec with MockitoSugar {
 
   "search" in new WithApplication(appMock) with WsTestClient {
     callWebservice(app, "search_request_empty.json", (json) => {
-      val summary = (json \ "summary")
+      val summary = json \ "summary"
       (summary \ "page").as[Int] mustBe 1
       (summary \ "pageCount").as[Int] mustBe 3590324
       (summary \ "totalCount").as[Int] mustBe 35903240

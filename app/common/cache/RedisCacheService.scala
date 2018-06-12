@@ -1,8 +1,8 @@
 package common.cache
 
-import com.redis.RedisClient
+import com.redis.{RedisClient, Seconds}
 import common.config.AppConfigService
-import common.executor.{RepositoryDispatcherContext, WorkerDispatcherContext}
+import common.executor.WorkerDispatcherContext
 import javax.inject.{Inject, Singleton}
 import play.api.{Logger, MarkerContext}
 
@@ -12,6 +12,7 @@ import play.api.{Logger, MarkerContext}
 trait RedisCacheService {
   def get(id : String)(implicit mc: MarkerContext): Option[String]
   def set(id: String, doc: String)(implicit mc: MarkerContext): Boolean
+  def flushall()(implicit mc: MarkerContext): Boolean
 }
 
 @Singleton
@@ -20,31 +21,46 @@ class RedisCacheServiceImpl @Inject()
   extends RedisCacheService {
 
   private val logger = Logger(this.getClass)
-  private val defaultExpiryDate = appConfigService.properties("redis.default.expiry").toLong
+  private val defaultExpiryInSeconds = appConfigService.properties("redis.default.expiry").toLong
 
-  lazy val redis = new RedisClient(
+  private lazy val redis = new RedisClient(
     appConfigService.properties("redis.host"),
     appConfigService.properties("redis.port").toInt)
 
   /**
-    * Gets a record from Redis
+    * Gets a record from Redis Cache
     *
     * @param id
     * @return
     */
   override def get(id : String)(implicit mc: MarkerContext): Option[String] = {
     logger.info(s"Redis get - : $id")
-    redis.get(id)
+    val item = redis.get(id)
+    if (item.isDefined) logger.info("cache hit")
+    item
   }
 
   /**
-    * Inserts a record in Mongo DB
+    * Inserts a record in Redis Cache
     *
     * @return
     */
   override def set(id: String, doc: String)(implicit mc: MarkerContext): Boolean = {
-    logger.info(s"Redis set - $id, $doc")
-    redis.setex(id, defaultExpiryDate, doc)
+    logger.info(s"Redis set - $id")
+    val success = redis.set(id, doc, onlyIfExists = false, Seconds(defaultExpiryInSeconds))
+    if (!success) logger.info("cache set FAILURE!")
+    success
   }
+
+  /**
+    * Resets Redis Cache
+    *
+    * @return
+    */
+  override def flushall()(implicit mc: MarkerContext): Boolean = {
+    logger.trace(s"Redis flushall")
+    redis.flushall
+  }
+
 
 }

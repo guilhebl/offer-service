@@ -145,7 +145,7 @@ To check service logs:
 
 ```journalctl -u api-service -b```
 
-### Mongo DB Integration
+### MongoDB
 
 To install MongoDb follow [instructions](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/)
 
@@ -157,3 +157,60 @@ To list Dbs: ```show dbs```
 
 To Query offer collections: 
 ```use searchprod```
+
+
+### Redis Cache
+
+in order to install Redis follow instructions [here](https://redis.io/topics/quickstart)
+
+after installing redis start the service using:
+
+```sudo systemctl start redis```
+
+to run Redis CLI:
+
+```
+redis-cli
+```
+
+To flush cache (using redis-cli)
+
+```flushall```
+
+Config redis.conf:
+
+it is important to configure Redis to use the proper log file path and dump file
+
+```
+sudo mkdir /var/log/redis
+sudo touch /var/log/redis/redis-server.log
+sudo chown -R redis:redis /var/log/redis/
+sudo chown -R redis:redis /etc/redis/
+```
+
+open redis.conf file located in etc/redis/ 
+
+and set:
+
+```
+## SET LOG FILE LOCATION
+logfile "/var/log/redis/redis-server.log"
+
+## SET THIS LINE TO NO
+stop-writes-on-bgsave-error no
+
+```
+
+Restart Redis after changing config: ```sudo systemctl restart redis```
+
+To check where is Redis is storing its RDB (Snapshot file):
+
+```
+redis-cli
+CONFIG GET dir
+CONFIG GET dbfilename
+```
+
+To check logs:
+
+```sudo tail -f -n2000 /var/log/redis/redis-server.log```
