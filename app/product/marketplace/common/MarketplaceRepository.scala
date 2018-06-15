@@ -40,6 +40,7 @@ class MarketplaceRepositoryImpl @Inject()
 (implicit ec: RepositoryDispatcherContext) extends MarketplaceRepository {
 
   private val logger = Logger(this.getClass)
+  private val collectionName = "offer"
 
   // utility functions to enable futures to be executed in parallel and later on wait for all to complete either with SUCCESS or FAILURE
   private def lift[T](futures: Seq[Future[T]]) = futures.map(_.map {
@@ -95,7 +96,7 @@ class MarketplaceRepositoryImpl @Inject()
     val cal = Calendar.getInstance()
     val list = item.list.map(OfferLog(_, cal.getTimeInMillis))
     val documents = list.map(OfferLog.entityToDocumentConverterMongo).toSeq
-    mongoDbRepository.insertMany(documents)
+    mongoDbRepository.insertMany(collectionName, documents)
   }
 
   /**
@@ -304,18 +305,16 @@ class MarketplaceRepositoryImpl @Inject()
     }
 
     idType match {
-      case Upc => {
-          val providers = getMarketplaceProvidersByCountry(country.getOrElse(UnitedStates))
-          val upc = detail.get.offer.upc.get
-          val listFutures = for (provider <- providers if !provider.equals(detail.get.offer.partyName))
-            yield fetchProductDetail(upc, Upc, provider, country)
-          val response = waitAll(listFutures)
-          response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
-      }
-      case _ => {
+      case Upc =>
+        val providers = getMarketplaceProvidersByCountry(country.getOrElse(UnitedStates)).filter(!_.equals(detail.get.offer.partyName))
+        val upc = detail.get.offer.upc.get
+        val listFutures = for (provider <- providers) yield fetchProductDetail(upc, Upc, provider, country)
+        val response = waitAll(listFutures)
+        response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
+
+      case _ =>
         logger.error(s"Error - getProductDetailItems - invalid idType: $idType")
         Future.successful(None)
-      }
     }
   }
 

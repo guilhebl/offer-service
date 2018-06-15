@@ -2,9 +2,10 @@ package common.db
 
 import common.config.AppConfigService
 import common.db.Helpers._
-import common.executor.WorkerDispatcherContext
+import common.executor.RepositoryDispatcherContext
 import javax.inject.{Inject, Singleton}
 import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.model.Projections._
 import org.mongodb.scala.{Document, MongoCollection}
 import play.api.{Logger, MarkerContext}
 
@@ -14,84 +15,132 @@ import scala.concurrent.Future
   * A pure non-blocking interface
   */
 trait MongoRepository {
-  def search()(implicit mc: MarkerContext): Future[Option[Seq[Document]]]
-  def get(id : String)(implicit mc: MarkerContext): Future[Option[Document]]
-  def insert(r : Document)(implicit mc: MarkerContext): Future[Option[Document]]
-  def insertMany(seq : Seq[Document])(implicit mc: MarkerContext): Future[Option[Seq[Document]]]
-  def delete(id : String)(implicit mc: MarkerContext): Future[Option[Document]]
+  def search(collectionName: String, fields: Option[Seq[String]] = None)(implicit mc: MarkerContext): Future[Seq[Document]]
+  def getAllInStringField(collectionName: String, inField: String, inSeq: Seq[String], fields: Option[Seq[String]] = None)
+                         (implicit mc: MarkerContext): Future[Seq[Document]]
+  def get(collectionName: String, id : String)(implicit mc: MarkerContext): Future[Option[Document]]
+  def getCollection(collectionName: String)(implicit mc: MarkerContext): MongoCollection[Document]
+  def insert(collectionName: String, r : Document)(implicit mc: MarkerContext): Future[Option[Document]]
+  def insertMany(collectionName: String, seq : Seq[Document])(implicit mc: MarkerContext): Future[Option[Seq[Document]]]
+  def delete(collectionName: String, id : String)(implicit mc: MarkerContext): Future[Option[Document]]
 }
 
+/**
+  * MongoDB driver supports non-blocking async operations, as much as possible use the async way of calling Mongo
+  * to achieve better performance
+  *
+  * @param appConfigService
+  * @param mongoService
+  * @param ec
+  */
 @Singleton
 class MongoRepositoryImpl @Inject()
-(appConfigService: AppConfigService, mongoService: MongoDbService)(implicit ec: WorkerDispatcherContext)
+(appConfigService: AppConfigService, mongoService: MongoDbService)(implicit ec: RepositoryDispatcherContext)
   extends MongoRepository {
 
   private lazy val logger = Logger(this.getClass)
-  lazy val collectionName = appConfigService.properties("mongoDb.db.offer.collection.name")
+  private lazy val db = mongoService.getDefaultDb
 
-  /**
-    * Searches in DB
-    * @return
-    */
-  override def search()(implicit mc: MarkerContext): Future[Option[Seq[Document]]] = {
-    logger.trace(s"Mongo search")
-    val db = mongoService.getDefaultDb
-    val collection: MongoCollection[Document] = db.getCollection(collectionName)
-    Future.successful(Some(collection.find().results()))
+
+  override def getCollection(collectionName: String)(implicit mc: MarkerContext): MongoCollection[Document] = {
+    db.getCollection(collectionName)
   }
 
   /**
-    * Gets a record from Mongo DB
+    * Searches documents in DB
+    *
+    * @param collectionName
+    * @param fields - specify fields to select
+    *
+    * @return
+    */
+  override def search(collectionName: String, fields: Option[Seq[String]] = None)(implicit mc: MarkerContext): Future[Seq[Document]] = {
+    logger.trace(s"Mongo search")
+    val collection: MongoCollection[Document] = getCollection(collectionName)
+
+    fields match {
+      case Some(x) => collection.find().projection(include(fields.get : _*)).toFuture()
+      case _ => collection.find().toFuture()
+    }
+  }
+
+  /**
+    * Searches documents in DB all in collection of strings
+    *
+    * @param collectionName
+    * @param fields - specify fields to select
+    *
+    * @return
+    */
+  override def getAllInStringField(collectionName: String, inField: String, inSeq: Seq[String], fields: Option[Seq[String]] = None)(implicit mc: MarkerContext): Future[Seq[Document]] = {
+    logger.trace(s"Mongo search In")
+    val collection: MongoCollection[Document] = getCollection(collectionName)
+
+    fields match {
+      case Some(x) => collection.find().projection(in(inField, inSeq)).projection(include(fields.get : _*)).toFuture()
+      case _ => collection.find().projection(in(inField, inSeq)).toFuture()
+    }
+  }
+
+  /**
+    * Gets a document from Mongo DB
     *
     * @param id
     * @return
     */
-  override def get(id : String)(implicit mc: MarkerContext): Future[Option[Document]] = {
+  override def get(collectionName: String, id : String)(implicit mc: MarkerContext): Future[Option[Document]] = {
     logger.trace(s"Db getDetails - : $id")
-    val db = mongoService.getDefaultDb
-    val collection: MongoCollection[Document] = db.getCollection(collectionName)
-    val item = collection.find(equal("_id", id)).first().headResult()
-    Future.successful(Some(item))
+
+    val collection: MongoCollection[Document] = getCollection(collectionName)
+    val item = collection.find(equal("_id", id)).first()
+    item.toFutureOption()
   }
 
   /**
-    * Inserts a record in Mongo DB
+    * Inserts a document in Mongo DB
     *
     * @return
     */
-  override def insert(r : Document)(implicit mc: MarkerContext): Future[Option[Document]] = {
+  override def insert(collectionName: String, r : Document)(implicit mc: MarkerContext): Future[Option[Document]] = {
     logger.trace(s"Device Mongo insert - $r")
-    val db = mongoService.getDefaultDb
-    val collection: MongoCollection[Document] = db.getCollection(collectionName)
-    collection.insertOne(r).results()
-    Future.successful(Some(r))
+    val collection: MongoCollection[Document] = getCollection(collectionName)
+
+    collection.insertOne(r).toFutureOption().map {
+      case Some(x) => Some(r)
+      case _ => None
+    }
   }
 
   /**
-    * Inserts Many records in Jasper Mongo DB
+    * Inserts Many documents in Mongo DB
     *
     * @return
     */
-  override def insertMany(seq : Seq[Document])(implicit mc: MarkerContext): Future[Option[Seq[Document]]] = {
+  override def insertMany(collectionName: String, seq: Seq[Document])(implicit mc: MarkerContext): Future[Option[Seq[Document]]] = {
     logger.trace(s"Device Mongo insertMany - $seq")
-    val db = mongoService.getDefaultDb
-    val collection: MongoCollection[Document] = db.getCollection(collectionName)
-    collection.insertMany(seq).results()
-    Future.successful(Some(seq))
+    val collection: MongoCollection[Document] = getCollection(collectionName)
+
+    collection.insertMany(seq).toFutureOption().map {
+      case Some(x) => Some(seq)
+      case _ => None
+    }
   }
 
   /**
-    * Delete a record in Jasper Mongo DB
+    * Delete a document in Mongo DB
     *
     * @return
     */
-  override def delete(id : String)(implicit mc: MarkerContext): Future[Option[Document]] = {
+  override def delete(collectionName: String, id: String)(implicit mc: MarkerContext): Future[Option[Document]] = {
     logger.trace(s"Device Mongo delete - $id")
-    val db = mongoService.getDefaultDb
-    val collection: MongoCollection[Document] = db.getCollection(collectionName)
+    val collection: MongoCollection[Document] = getCollection(collectionName)
     val item = collection.find(equal("_id", id)).first().headResult()
-    collection.deleteOne(equal("_id", id)).results()
-    Future.successful(Some(item))
+    if (item.isEmpty) return Future.successful(None)
+
+    collection.deleteOne(equal("_id", id)).toFutureOption().map {
+      case Some(x) => Some(item)
+      case _ => None
+    }
   }
 
 }

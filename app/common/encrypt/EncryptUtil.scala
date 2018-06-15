@@ -62,6 +62,23 @@ object EncryptUtil {
         ""
     }
   }
+
+  def encryptAesWithNonce(key : String, s:String): Option[EncryptionPair] = {
+    try {
+      val nonce: String = RandomStringGenerator.generate(12)
+      val encrypted = encryptAES(key, nonce + s)
+      Some(EncryptionPair(encrypted, nonce))
+    }
+    catch {
+      case e: Exception =>
+        logger.trace("error while encrypting using AES with nonce" + e.getMessage)
+        None
+      case _: Exception =>
+        logger.trace("error while encrypting using AES with nonce")
+        None
+    }
+  }
+
   def encryptAesGcm(key : String, s:String): Option[EncryptionPair] = {
     try {
       // Initialise random and generate key
