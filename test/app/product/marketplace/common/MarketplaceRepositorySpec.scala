@@ -3,7 +3,7 @@ package app.product.marketplace.common
 import common.MockBaseUtil._
 import common.cache.RedisCacheService
 import common.config.AppConfigService
-import common.db.MongoRepository
+import common.db.MongoDbService
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -51,7 +51,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
 
       val repositoryDispatcher = getMockExecutionContext
 
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
 
       val req = new ListRequest(Seq.empty, Some(sortBy), Some(sortOrder), Some(1), Some(10))
@@ -102,7 +102,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val amazonMock = mock[AmazonRepository]
       when(amazonMock.search(any[Map[String, String]])) thenReturn Future.successful(Some(getProductList))
 
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
       val repositoryDispatcher = getMockExecutionContext
 
@@ -219,7 +219,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
       when(redisCacheServiceMock.get("{\"searchColumns\":[]}")) thenReturn None
 
@@ -265,7 +265,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
       when(redisCacheServiceMock.get("{\"searchColumns\":[]}")) thenReturn None
 
@@ -312,7 +312,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
       when(redisCacheServiceMock.get("1")) thenReturn None
 
@@ -365,7 +365,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
 
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
       when(redisCacheServiceMock.get("1")) thenReturn None
 
@@ -419,7 +419,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val appConfigMock = mock[AppConfigService]
       when(appConfigMock.properties) thenReturn testConfigProperties
 
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
       when(redisCacheServiceMock.get("1")) thenReturn None
 
@@ -448,7 +448,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
 
       val appConfigMock = mock[AppConfigService]
@@ -477,7 +477,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
 
       val appConfigMock = mock[AppConfigService]
@@ -506,7 +506,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
 
       val appConfigMock = mock[AppConfigService]
@@ -535,7 +535,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
 
       val appConfigMock = mock[AppConfigService]
@@ -564,7 +564,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val ebayMock = mock[EbayRepository]
       val amazonMock = mock[AmazonRepository]
       val repositoryDispatcher = getMockExecutionContext
-      val mongoRepositoryMock = mock[MongoRepository]
+      val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
 
       val appConfigMock = mock[AppConfigService]

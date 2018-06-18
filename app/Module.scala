@@ -1,7 +1,7 @@
 import com.google.inject.AbstractModule
 import common.cache.{RedisCacheService, RedisCacheServiceImpl}
 import common.config.{AppConfigService, AppConfigServiceImpl}
-import common.db.{MongoRepository, MongoRepositoryImpl}
+import common.db.{MongoDbService, MongoDbServiceImpl}
 import geo.{GeolocationRepository, GeolocationRepositoryImpl}
 import javax.inject._
 import net.codingwell.scalaguice.ScalaModule
@@ -31,7 +31,7 @@ class Module(environment: Environment, configuration: Configuration)
     bind[EbayRepository].to[EbayRepositoryImpl].in[Singleton]
     bind[AmazonRepository].to[AmazonRepositoryImpl].in[Singleton]
     bind[AmazonRequestHelper].to[AmazonRequestHelperImpl].in[Singleton]
-    bind[MongoRepository].to[MongoRepositoryImpl].in[Singleton]
+    bind[MongoDbService].to[MongoDbServiceImpl].in[Singleton]
     bind[RedisCacheService].to[RedisCacheServiceImpl].in[Singleton]
   }
 }

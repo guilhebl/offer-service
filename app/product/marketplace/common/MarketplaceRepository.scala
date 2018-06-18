@@ -4,13 +4,14 @@ import java.util.Calendar
 
 import common.cache.RedisCacheService
 import common.config.AppConfigService
-import common.db.MongoRepository
+import common.db.MongoDbService
 import common.executor.RepositoryDispatcherContext
 import common.log.ThreadLogger
 import common.util.CollectionUtil._
 import common.util.EntityValidationUtil._
 import common.util.StringCommonUtil._
 import javax.inject.{Inject, Singleton}
+import org.mongodb.scala.MongoCollection
 import play.api.Logger
 import play.api.libs.json.Json
 import product.marketplace.amazon.AmazonRepository
@@ -36,11 +37,11 @@ trait MarketplaceRepository {
 @Singleton
 class MarketplaceRepositoryImpl @Inject()
 (appConfigService: AppConfigService, walmartRepository: WalmartRepository, bestbuyRepository: BestBuyRepository,
- ebayRepository: EbayRepository, amazonRepository: AmazonRepository, mongoDbRepository: MongoRepository, cache: RedisCacheService)
+ ebayRepository: EbayRepository, amazonRepository: AmazonRepository, mongoDbService: MongoDbService, cache: RedisCacheService)
 (implicit ec: RepositoryDispatcherContext) extends MarketplaceRepository {
 
   private val logger = Logger(this.getClass)
-  private val collectionName = "offer"
+  private val CollectionName = "offer"
 
   // utility functions to enable futures to be executed in parallel and later on wait for all to complete either with SUCCESS or FAILURE
   private def lift[T](futures: Seq[Future[T]]) = futures.map(_.map {
@@ -92,11 +93,18 @@ class MarketplaceRepositoryImpl @Inject()
     *
     * @param item
     */
-  private def insertIntoDb(item: OfferList): Unit = {
+  private def insertIntoDb(item: OfferList): Future[Option[Seq[OfferLog]]] = {
     val cal = Calendar.getInstance()
-    val list = item.list.map(OfferLog(_, cal.getTimeInMillis))
-    val documents = list.map(OfferLog.entityToDocumentConverterMongo).toSeq
-    mongoDbRepository.insertMany(collectionName, documents)
+    val seq = item.list.map(OfferLog(_, cal.getTimeInMillis)).toSeq
+
+    val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionName)
+    collection.insertMany(seq).toFutureOption().map {
+      case Some(x) => {
+        logger.info("Offer Logs saved in Db")
+        Some(seq)
+      }
+      case _ => None
+    }
   }
 
   /**
@@ -108,7 +116,7 @@ class MarketplaceRepositoryImpl @Inject()
     logger.info(s"cache set: $requestKey")
     val obj = Json.toJson(item).toString()
     val savedResult = cache.set(requestKey, obj)
-    if (!savedResult) logger.info("couldn't save in cache!")
+    if (!savedResult) logger.info("object not saved in cache")
   }
 
   private def sortList(offerList: Option[OfferList], country: String, keyword: String, sortBy: String, asc: Boolean): Option[OfferList] = {

@@ -2,7 +2,6 @@ package app.product.functional
 
 import common.MockBaseUtil._
 import common.config.AppConfigService
-import common.db.MongoRepository
 import mockws.MockWS
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -56,8 +55,6 @@ class ProductControllerPostSearchSpec extends PlaySpec with MockitoSugar {
   val amazonRequestHelperMock = mock[AmazonRequestHelper]
   when(amazonRequestHelperMock.sign(any[String], any[String], any[String], any[HashMap[String,String]])) thenReturn "https://webservices.amazon.com/signed"
 
-  val mongoRepositoryMock = mock[MongoRepository]
-
   val appConfigMock = mock[AppConfigService]
   when(appConfigMock.properties) thenReturn testConfigProperties
   when(appConfigMock.buildImgUrl(Some(any[String]))) thenReturn "https://localhost:5555/assets/images/product-img.png"
@@ -66,7 +63,6 @@ class ProductControllerPostSearchSpec extends PlaySpec with MockitoSugar {
   val appMock = new GuiceApplicationBuilder()
     .overrides(bind[AppConfigService].toInstance(appConfigMock))
     .overrides(bind[AmazonRequestHelper].toInstance(amazonRequestHelperMock))
-    .overrides(bind[MongoRepository].toInstance(mongoRepositoryMock))
     .overrides(bind[WSClient].toInstance(ws))
     .build
 

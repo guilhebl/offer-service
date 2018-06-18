@@ -2,7 +2,6 @@ package app.product.functional
 
 import common.MockBaseUtil._
 import common.config.AppConfigService
-import common.db.MongoRepository
 import mockws.MockWS
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
@@ -53,12 +52,9 @@ class ProductControllerPostSearchNotFoundSpec extends PlaySpec with MockitoSugar
   when(appConfigMock.buildImgUrl(Some(any[String]))) thenReturn "https://localhost:5555/assets/images/product-img.png"
   when(appConfigMock.buildImgUrlExternal(Some(any[String]), any[Boolean])) thenReturn "https://localhost:5555/assets/images/product-img-01.jpg"
 
-  val mongoRepositoryMock = mock[MongoRepository]
-
   val appMock = new GuiceApplicationBuilder()
     .overrides(bind[AppConfigService].toInstance(appConfigMock))
     .overrides(bind[AmazonRequestHelper].toInstance(amazonRequestHelperMock))
-    .overrides(bind[MongoRepository].toInstance(mongoRepositoryMock))
     .overrides(bind[WSClient].toInstance(ws))
     .build
 
