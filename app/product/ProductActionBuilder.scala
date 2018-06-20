@@ -31,7 +31,7 @@ class ProductActionBuilder @Inject()(messagesApi: MessagesApi, playBodyParsers: 
     with RequestMarkerContext
     with HttpVerbs {
 
-  val parser: BodyParser[AnyContent] = playBodyParsers.anyContent
+  override val parser: BodyParser[AnyContent] = playBodyParsers.anyContent
 
   type ProductRequestBlock[A] = ProductRequest[A] => Future[Result]
 

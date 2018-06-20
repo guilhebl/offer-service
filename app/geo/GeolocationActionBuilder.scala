@@ -31,7 +31,7 @@ class GeolocationActionBuilder @Inject()(messagesApi: MessagesApi, playBodyParse
     with RequestMarkerContext
     with HttpVerbs {
 
-  val parser: BodyParser[AnyContent] = playBodyParsers.anyContent
+  override val parser: BodyParser[AnyContent] = playBodyParsers.anyContent
 
   type GeolocationRequestBlock[A] = GeolocationRequest[A] => Future[Result]
 
