@@ -33,7 +33,7 @@ libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2
 libraryDependencies += "io.gatling.highcharts" % "gatling-charts-highcharts" % gatlingVersion(scalaBinaryVersion.value) % Test
 libraryDependencies += "io.gatling" % "gatling-test-framework" % gatlingVersion(scalaBinaryVersion.value) % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
-libraryDependencies += "de.leanovate.play-mockws" %% "play-mockws" % "2.6.0" % Test
+libraryDependencies += "de.leanovate.play-mockws" %% "play-mockws" % "2.6.5" % Test
 libraryDependencies += "org.mockito" % "mockito-all" % "1.9.5" % Test
 libraryDependencies += specs2 % Test
 
