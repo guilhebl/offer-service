@@ -24,7 +24,7 @@ libraryDependencies += "org.joda" % "joda-convert" % "1.9.2"
 libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.11"
 libraryDependencies += "com.netaporter" %% "scala-uri" % "0.4.16"
 libraryDependencies += "net.codingwell" %% "scala-guice" % "4.2.1"
-libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.3.0"
+libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.0"
 libraryDependencies += "net.debasishg" %% "redisclient" % "3.7"
 libraryDependencies += "commons-codec" % "commons-codec" % "1.3"
 
