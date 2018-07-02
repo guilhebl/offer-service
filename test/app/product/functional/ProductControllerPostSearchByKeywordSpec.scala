@@ -62,7 +62,7 @@ class ProductControllerPostSearchByKeywordSpec extends PlaySpec with MockitoSuga
 
   "search by keyword" in new WithApplication(appMock) with WsTestClient {
 
-    val request = FakeRequest(POST, "/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(jsonRequest)
+    val request = FakeRequest(POST, "/api/v1/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(jsonRequest)
     val response = route(app, request).get
     val json = contentAsJson(response)
 

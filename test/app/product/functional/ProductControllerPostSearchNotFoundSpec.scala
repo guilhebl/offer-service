@@ -59,7 +59,7 @@ class ProductControllerPostSearchNotFoundSpec extends PlaySpec with MockitoSugar
     .build
 
   "search by keyword no results should return Total results zero" in new WithApplication(appMock) with WsTestClient {
-    val request = FakeRequest(POST, "/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(
+    val request = FakeRequest(POST, "/api/v1/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(
       Json.parse(Source.fromFile(s"$MockFilesPath/sample_search_request_not_found.json").getLines.mkString))
     val response = route(app, request).get
     val json = contentAsJson(response)

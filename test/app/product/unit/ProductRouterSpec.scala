@@ -12,7 +12,7 @@ class ProductRouterSpec extends PlaySpec with MockitoSugar {
       val obj = new ProductRouter(mockCtrl)
 
       val v = obj.link("1")
-      v mustEqual "/products/1"
+      v mustEqual "/api/v1/products/1"
     }
   }
   

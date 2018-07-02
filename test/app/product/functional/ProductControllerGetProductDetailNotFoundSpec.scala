@@ -66,10 +66,10 @@ class ProductControllerGetProductDetailNotFoundSpec extends PlaySpec with Mockit
   }
 
   "get product by Id NotFound should return None for all marketplace providers" in new WithApplication(appMock) with WsTestClient {
-    expectResultEmpty(app, "/products/12345678?idType=id&source=walmart.com")
-    expectResultEmpty(app, "/products/12345678?idType=id&source=ebay.com")
-    expectResultEmpty(app, "/products/12345678?idType=id&source=amazon.com")
-    expectResultEmpty(app, "/products/12345678?idType=id&source=bestbuy.com")
+    expectResultEmpty(app, "/api/v1/products/12345678?idType=id&source=walmart.com")
+    expectResultEmpty(app, "/api/v1/products/12345678?idType=id&source=ebay.com")
+    expectResultEmpty(app, "/api/v1/products/12345678?idType=id&source=amazon.com")
+    expectResultEmpty(app, "/api/v1/products/12345678?idType=id&source=bestbuy.com")
   }
 
 }

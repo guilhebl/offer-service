@@ -1,6 +1,6 @@
 GET        /                       controllers.HomeController.index
 
-->         /products               product.ProductRouter
+->         /api/v1/products               product.ProductRouter
 
 # ->         /geo               	   geo.GeolocationRouter
 

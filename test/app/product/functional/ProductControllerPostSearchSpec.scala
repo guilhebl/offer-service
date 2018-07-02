@@ -147,7 +147,7 @@ class ProductControllerPostSearchSpec extends PlaySpec with MockitoSugar {
   }
 
   def callWebservice(app: Application, mockRequestJsonFile: String, validator: JsValue => Unit) : Unit = {
-    val req = FakeRequest(POST, "/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(
+    val req = FakeRequest(POST, "/api/v1/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(
       Json.parse(Source.fromFile(s"$MockFilesPath/$mockRequestJsonFile").getLines.mkString))
     val response = route(app, req).get
     validator(contentAsJson(response))

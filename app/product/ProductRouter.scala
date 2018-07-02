@@ -9,7 +9,7 @@ import play.api.routing.sird._
   * Routes and URLs to the ProductResource controller.
   */
 class ProductRouter @Inject()(controller: ProductController) extends SimpleRouter {
-  val prefix = "/products"
+  val prefix = "/api/v1/products"
 
   def link(id: String): String = {
     import com.netaporter.uri.dsl._
