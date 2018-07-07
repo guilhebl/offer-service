@@ -23,7 +23,7 @@ class EmailTask @Inject()(
 ) {
 
   private lazy val logger = Logger(this.getClass)
-  private lazy val intervalSeconds = appConfigService.properties("scheduler.job.frequency.millis").toInt
+  private lazy val intervalSeconds = appConfigService.properties("scheduler.job.frequency.seconds").toInt
 
   actorSystem.scheduler.schedule(initialDelay = 0.seconds, interval = intervalSeconds.second) {
     logger.info("Email Job starting...")
@@ -33,7 +33,7 @@ class EmailTask @Inject()(
         "test",
         "searchprodmail@gmail.com",
         Seq("searchprodmailtest1@gmail.com"),
-        "",
+        "test",
         None
       )
     )

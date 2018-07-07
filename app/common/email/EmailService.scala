@@ -7,8 +7,6 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.mailer._
 
-
-
 /**
   * A pure non-blocking interface for the EmailService.
   */
@@ -21,21 +19,20 @@ trait EmailService {
   *
   */
 @Singleton
-class EmailServiceImpl @Inject()(mailerClient: MailerClient,
-                                        appConfigService: AppConfigService
-                                      )(implicit ec: WorkerDispatcherContext)
-  extends EmailService {
+class EmailServiceImpl @Inject()(mailerClient: MailerClient, appConfigService: AppConfigService)(implicit ec: WorkerDispatcherContext)
+    extends EmailService {
 
   private val logger = Logger(this.getClass)
 
   override def sendEmail(emailRequest: EmailRequest): EmailResponse = {
     logger.info(s"sending email: $emailRequest")
+    val content = views.html.emailtest(emailRequest.templateId)
 
     val email = Email(
       emailRequest.subject,
       emailRequest.from,
       emailRequest.to,
-      bodyHtml = Some(s"""<html><body><p>An <b>html</b> message Test</p></body></html>""")
+      bodyHtml = Some(content.body)
     )
     val result = mailerClient.send(email)
     EmailResponse.ok(result)
