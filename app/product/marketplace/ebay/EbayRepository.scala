@@ -68,24 +68,20 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
 
     val futureResult: Future[Option[EbaySearchResponse]] = req.get()
         .map {
-          response => {
-            val resp = (response.json).validate[EbaySearchResponse]
+          response =>
+            val resp = response.json.validate[EbaySearchResponse]
             resp match {
               case s: JsSuccess[EbaySearchResponse] => Some(s.get)
-              case e: JsError => {
+              case e: JsError =>
                 logger.info("Errors: " + JsError.toJson(e).toString())
                 None
-              }
             }
-          }
         }
 
-    futureResult.map(r => {
-      r match {
-        case Some(entity) => buildList(entity)
-        case _ => None
-      }
-    })
+    futureResult.map {
+      case Some(entity) => buildList(entity)
+      case _ => None
+    }
   }
   
   private def getEbayGlobalId(country : String) = {
@@ -114,12 +110,11 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     val url = endpoint + '/' + path
 
     idType match {
-      case Id | Upc => {
-
+      case Id | Upc =>
         val idTypeEbay = getEbayIdType(idType)
 
         // if idType is invalid return empty response
-        if (!idTypeEbay.isDefined) return Future.successful(None)
+        if (idTypeEbay.isEmpty) return Future.successful(None)
 
         val req: WSRequest = ws.url(url)
           .addHttpHeaders("Accept" -> "application/json")
@@ -143,7 +138,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
         val futureResult: Future[Option[EbayProductDetailResponse]] = req.get()
           .map {
             response => {
-              val resp = (response.json).validate[EbayProductDetailResponse]
+              val resp = response.json.validate[EbayProductDetailResponse]
               resp match {
                 case s: JsSuccess[EbayProductDetailResponse] => Some(s.get)
                 case e: JsError => {
@@ -153,13 +148,12 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
               }
             }
           }
-        futureResult.map(r => {
-          r match {
-            case Some(entity) => buildProductDetail(entity)
-            case _ => None
-          }
-        })
-      }
+
+        futureResult.map {
+          case Some(entity) => buildProductDetail(entity)
+          case _ => None
+        }
+
       case _ => Future.successful(None)
     }
   }
@@ -237,8 +231,8 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     private def buildProductDetail(item : SearchResultItem): Option[OfferDetail] = {
       val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Ebay) != -1
 
-      val productId = if (!item.productId.isDefined) item.itemId.head else item.productId.get.head.value
-      val imgUrl = if (!item.pictureURLLarge.isDefined) "" else item.pictureURLLarge.get.head
+      val productId = if (item.productId.isEmpty) item.itemId.head else item.productId.get.head.value
+      val imgUrl = if (item.pictureURLLarge.isEmpty) "" else item.pictureURLLarge.get.head
       val itemSellerUrl = if (item.viewItemURL == null) "" else item.viewItemURL.head
 
       val detail = new OfferDetail(
@@ -262,7 +256,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     }
 
     private def buildProductDetail(item : EbayProductDetailResponse): Option[OfferDetail] = {
-      if (!item.findItemsByProductResponse.head.searchResult.isDefined) return None
+      if (item.findItemsByProductResponse.head.searchResult.isEmpty) return None
       buildProductDetail(item.findItemsByProductResponse.head.searchResult.get.head.item.head)
     }
 

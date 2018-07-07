@@ -76,12 +76,10 @@ class WalmartRepositoryImpl @Inject()
             }
       }
 
-      futureResult.map(r => {
-        r match {
-          case Some(entity) => buildList(entity, pageSize)
-          case _ => None
-        }
-      })
+      futureResult.map {
+        case Some(entity) => buildList(entity, pageSize)
+        case _ => None
+      }
 
     } else {
       // picks up trending products if no search query present      

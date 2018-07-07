@@ -2,9 +2,12 @@ import com.google.inject.AbstractModule
 import common.cache.{RedisCacheService, RedisCacheServiceImpl}
 import common.config.{AppConfigService, AppConfigServiceImpl}
 import common.db.{MongoDbService, MongoDbServiceImpl}
+import common.email.{EmailService, EmailServiceImpl}
+import common.scheduler.EmailTask
 import geo.{GeolocationRepository, GeolocationRepositoryImpl}
 import javax.inject._
 import net.codingwell.scalaguice.ScalaModule
+import play.api.libs.concurrent.AkkaGuiceSupport
 import play.api.{Configuration, Environment}
 import product.marketplace.amazon.{AmazonRepository, AmazonRepositoryImpl, AmazonRequestHelper, AmazonRequestHelperImpl}
 import product.marketplace.bestbuy.{BestBuyRepository, BestBuyRepositoryImpl}
@@ -18,7 +21,7 @@ import product.{ProductRepository, ProductRepositoryImpl}
   */
 class Module(environment: Environment, configuration: Configuration)
     extends AbstractModule
-    with ScalaModule {
+    with ScalaModule with AkkaGuiceSupport {
 
   override def configure() = {
     bind[AppConfigService].to[AppConfigServiceImpl].in[Singleton]
@@ -33,5 +36,7 @@ class Module(environment: Environment, configuration: Configuration)
     bind[AmazonRequestHelper].to[AmazonRequestHelperImpl].in[Singleton]
     bind[MongoDbService].to[MongoDbServiceImpl].in[Singleton]
     bind[RedisCacheService].to[RedisCacheServiceImpl].in[Singleton]
+    bind[EmailService].to[EmailServiceImpl]
+    bind(classOf[EmailTask]).asEagerSingleton()
   }
 }

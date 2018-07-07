@@ -27,6 +27,8 @@ libraryDependencies += "net.codingwell" %% "scala-guice" % "4.2.1"
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.0"
 libraryDependencies += "net.debasishg" %% "redisclient" % "3.7"
 libraryDependencies += "commons-codec" % "commons-codec" % "1.3"
+libraryDependencies += "com.typesafe.play" %% "play-mailer" % "6.0.1"
+libraryDependencies += "com.typesafe.play" %% "play-mailer-guice" % "6.0.1"
 
 // test dependencies
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
