@@ -73,7 +73,7 @@ class AmazonRepositoryImpl @Inject()(
 
     val idTypeAmazon = filterIdType(idType)
 
-    if (!idTypeAmazon.isDefined) return Future.successful(None)
+    if (idTypeAmazon.isEmpty) return Future.successful(None)
 
     val endpoint: String = appConfigService.properties("amazonUSEndpoint")
     val accessKeyId: String = appConfigService.properties("amazonUSaccessKeyId")
@@ -114,14 +114,14 @@ class AmazonRepositoryImpl @Inject()(
   }
 
   private def buildProductDetail(response: Elem): Option[OfferDetail] = {
-    val items = (response \ "Items")
-    val itemNode = (items \ "Item")
+    val items = response \ "Items"
+    val itemNode = items \ "Item"
     if (itemNode.isEmpty) return None
-    val item = itemNode(0)
+    val item = itemNode.head
 
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Amazon) != -1
-    val itemAttrs = (item \ "ItemAttributes")
-    val offerSummary = (item \ "OfferSummary")
+    val itemAttrs = item \ "ItemAttributes"
+    val offerSummary = item \ "OfferSummary"
 
     val detail = new OfferDetail(
       new Offer(
@@ -140,13 +140,13 @@ class AmazonRepositoryImpl @Inject()(
         0.0f,
         0
       ),
-      buildDescription((itemAttrs \ "features")),
+      buildDescription(itemAttrs \ "features"),
       buildProductDetailAttributes(
-        (itemAttrs \ "Brand"),
-        (itemAttrs \ "Manufacturer"),
-        (itemAttrs \ "HardwarePlatform"),
-        (itemAttrs \ "Model"),
-        (itemAttrs \ "Publisher")
+        itemAttrs \ "Brand",
+        itemAttrs \ "Manufacturer",
+        itemAttrs \ "HardwarePlatform",
+        itemAttrs \ "Model",
+        itemAttrs \ "Publisher"
       ),
       ListBuffer.empty[OfferDetailItem]
     )
@@ -191,7 +191,7 @@ class AmazonRepositoryImpl @Inject()(
 
   private def buildList(page: Int, response: Elem): Option[OfferList] = {
     ThreadLogger.log("Amazon buildList")
-    val items = (response \ "Items")
+    val items = response \ "Items"
     val total = (items \ "TotalResults").text.toInt
     if (total == 0) return None
 
@@ -200,8 +200,8 @@ class AmazonRepositoryImpl @Inject()(
     val summary = new ListSummary(page, totalPages, total)
 
     val list = (items \ "Item").map { item =>
-      val itemAttrs = (item \ "ItemAttributes")
-      val offerSummary = (item \ "OfferSummary")
+      val itemAttrs = item \ "ItemAttributes"
+      val offerSummary = item \ "OfferSummary"
       new Offer(
         (item \ "ASIN").text,
         Some((itemAttrs \ "UPC").text),

@@ -127,7 +127,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     ThreadLogger.log("BestBuy getProductDetail")
     val idTypeBestBuy = filterIdType(idType)
 
-    if (!idTypeBestBuy.isDefined) return Future.successful(None)
+    if (idTypeBestBuy.isEmpty) return Future.successful(None)
 
     // try to acquire lock from request Monitor
     if (!requestMonitor.isRequestPossible(BestBuy)) {

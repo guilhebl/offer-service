@@ -60,22 +60,5 @@ lazy val docs = (project in file("docs")).enablePlugins(ParadoxPlugin).
 javaOptions in Universal ++= Seq(
   // JVM memory tuning
   "-J-Xmx4096m",
-  "-J-Xms1024m",
-
-  // Since play uses separate pidfile we have to provide it with a proper path
-  // name of the pid file must be play.pid
-  // s"-Dpidfile.path=/opt/docker/${packageName.value}/run/play.pid"
-  //s"-Dpidfile.path=/dev/null"
+  "-J-Xms1024m"
 )
-
-//dockerBaseImage := "cogniteev/oracle-java:java8"
-
-// use ++= to merge a sequence with an existing sequence
-////dockerCommands ++= Seq(
-//  ExecCmd("RUN", "mkdir", s"/opt/docker/${packageName.value}"),
-//  ExecCmd("RUN", "mkdir", s"/opt/docker/${packageName.value}/run"),
-//  ExecCmd("RUN", "chown", "-R", "daemon:daemon", s"/opt/docker/${packageName.value}/")
-//)
-
-// exposing the play ports
-//dockerExposedPorts in Docker := Seq(9000, 9443)

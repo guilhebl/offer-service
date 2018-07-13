@@ -25,20 +25,24 @@ class EmailTask @Inject()(
   private lazy val logger = Logger(this.getClass)
   private lazy val intervalSeconds = appConfigService.properties("scheduler.job.frequency.seconds").toInt
 
-  actorSystem.scheduler.schedule(initialDelay = 0.seconds, interval = intervalSeconds.second) {
-    logger.info("Email Job starting...")
+  actorSystem.scheduler.schedule(initialDelay = intervalSeconds.seconds, interval = intervalSeconds.second) {
 
-    val response = emailService.sendEmail(
-      EmailRequest(
-        "test",
-        "searchprodmail@gmail.com",
-        Seq("searchprodmailtest1@gmail.com"),
-        "test",
-        None
+    val isEnabled = appConfigService.properties("scheduler.job.email.enabled").toBoolean
+    logger.info(s"Email Job starting... job enabled: $isEnabled")
+
+    if (isEnabled) {
+      val response = emailService.sendEmail(
+        EmailRequest(
+          "test",
+          "searchprodmail@gmail.com",
+          Seq("searchprodmailtest1@gmail.com"),
+          "test",
+          None
+        )
       )
-    )
-
-    logger.info(s"Email Job completed: $response")
+      logger.info(s"Email sent: $response")
+    }
+    logger.info(s"Email Job completed")
   }
 
   // This is necessary to avoid thread leaks, specially if you are using a custom ExecutionContext

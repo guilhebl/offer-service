@@ -32,8 +32,20 @@ class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: 
     )
   }
 
-  def search: Action[AnyContent] = ProductAction.async { implicit request =>
+  def search(): Action[AnyContent] = ProductAction.async { implicit request =>
     processJsonPostList()
+  }
+
+  implicit class RichResult (result: Result) {
+    def enableCors =  result.withHeaders(
+      "Access-Control-Allow-Origin" -> "http://localhost:4200"
+    )
+  }
+
+  def searchOffers(query: String): Action[AnyContent] = ProductAction.async { implicit request =>
+    productResourceHandler.search(ListRequest.buildFromQuery(query)).map { offerList =>
+      Ok(Json.toJson(offerList)).enableCors
+    }
   }
 
   def get(id: String, idType: String, source: String, country: Option[String]): Action[AnyContent] = ProductAction.async { implicit request =>

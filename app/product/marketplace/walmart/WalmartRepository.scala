@@ -98,7 +98,7 @@ class WalmartRepositoryImpl @Inject()
       val futureResult: Future[Option[WalmartTrendingSearchResponse]] = req.get().map {
           response =>
             {
-              val resp = (response.json).validate[WalmartTrendingSearchResponse]
+              val resp = response.json.validate[WalmartTrendingSearchResponse]
               resp match {
                 case s: JsSuccess[WalmartTrendingSearchResponse] => Some(s.get)
                 case e: JsError => {
@@ -109,13 +109,11 @@ class WalmartRepositoryImpl @Inject()
             }
       }
 
-      futureResult.map(r => {
-        r match {
+      futureResult.map {
           case Some(entity) => buildList(entity, page, pageSize)
           case _ => None
-        }
-      })
 
+      }
     }
   }
 
@@ -158,12 +156,10 @@ class WalmartRepositoryImpl @Inject()
               }
             }
           }
-          futureResult.map(r => {
-            r match {
+          futureResult.map {
               case Some(entity) => buildProductDetail(entity)
               case _ => None
-            }
-          })
+          }
         }
         case Upc => {
           val url = endpoint + '/' + path
@@ -189,12 +185,10 @@ class WalmartRepositoryImpl @Inject()
               }
             }
           }
-          futureResult.map(r => {
-            r match {
+          futureResult.map {
               case Some(entity) => buildProductDetail(entity)
               case _ => None
-            }
-          })
+          }
         }
 
         case _ => Future.successful(None)

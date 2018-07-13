@@ -1,0 +1,18 @@
+[Unit]
+Description=Offer Service
+After=network.target
+
+[Service]
+EnvironmentFile=/home/offer-service/env
+PIDFile=/home/offer-service/app/offer-service/RUNNING_PID
+WorkingDirectory=/home/offer-service/app/offer-service
+ExecStart=/home/offer-service/app/offer-service/bin/offer-service -Dplay.http.secret.key=$APPLICATION_SECRET
+Restart=on-failure
+User=offer-service
+Group=offer-service
+
+# See http://serverfault.com/a/695863
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,7 @@
 package product.model
 
 import play.api.libs.json._
+import product.marketplace.common.MarketplaceConstants._
 
 case class ListRequest(
     searchColumns : Seq[NameValue] = Seq.empty,
@@ -11,5 +12,12 @@ case class ListRequest(
 )
 
 object ListRequest {
-  implicit val formatter = Json.format[ListRequest]  
+  implicit val formatter = Json.format[ListRequest]
+
+  def buildFromQuery(q: String): ListRequest = {
+    ListRequest(searchColumns = Seq(
+      NameValue(Name, q)
+    ))
+  }
+
 }

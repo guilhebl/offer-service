@@ -26,8 +26,8 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
   }
 
   def properties: Map[String, String] = propertiesMap
-  def hostname: String = properties("protocol") + properties("host") + "/"
-  def imgFolderUri: String = hostname + "assets/images/"
+  def hostname: String = properties("image.server.endpoint")
+  def imgFolderPath: String = hostname + properties("image.service.path")
   def proxyHostname: String = properties("protocol") + properties("proxyHost") + "/"
 
   /**
@@ -35,8 +35,8 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
     */
   def buildImgUrl(url: Option[String]): String = {
     url match {
-      case Some(v) => imgFolderUri + v;
-      case _ => imgFolderUri + "image-placeholder.png"
+      case Some(v) => imgFolderPath + v;
+      case _ => imgFolderPath + "image-placeholder.png"
     }
   }
 
@@ -54,7 +54,7 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
         } else {
           changeToHttpsUrl(urlString)
         }
-      case _ => imgFolderUri + "image-placeholder.png"
+      case _ => s"$imgFolderPath/image-placeholder.png"
     }
   }
 
