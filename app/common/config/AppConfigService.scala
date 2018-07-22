@@ -35,8 +35,8 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
     */
   def buildImgUrl(url: Option[String]): String = {
     url match {
-      case Some(v) => imgFolderPath + v;
-      case _ => imgFolderPath + "image-placeholder.png"
+      case Some(v) => s"$imgFolderPath/$v";
+      case _ => s"$imgFolderPath/image-placeholder.png"
     }
   }
 

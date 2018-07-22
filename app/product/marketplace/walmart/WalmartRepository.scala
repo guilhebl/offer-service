@@ -13,7 +13,6 @@ import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor
 import product.marketplace.walmart.model.{WalmartSearchBaseResponse, WalmartSearchItem, WalmartSearchResponse, WalmartTrendingSearchResponse}
 import product.model._
 
-import scala.collection.mutable.HashMap
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -68,10 +67,9 @@ class WalmartRepositoryImpl @Inject()
               val resp = response.json.validate[WalmartSearchResponse]
               resp match {
                 case s: JsSuccess[WalmartSearchResponse] => Some(s.get)
-                case e: JsError => {
+                case e: JsError =>
                   logger.info("Errors: " + JsError.toJson(e).toString())
                   None
-                }
               }
             }
       }
@@ -101,10 +99,9 @@ class WalmartRepositoryImpl @Inject()
               val resp = response.json.validate[WalmartTrendingSearchResponse]
               resp match {
                 case s: JsSuccess[WalmartTrendingSearchResponse] => Some(s.get)
-                case e: JsError => {
+                case e: JsError =>
                   logger.info("Errors: " + JsError.toJson(e).toString())
                   None
-                }
               }
             }
       }
@@ -133,7 +130,7 @@ class WalmartRepositoryImpl @Inject()
       val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
       idType match {
-        case Id => {
+        case Id =>
           val url = endpoint + '/' + path + '/' + id
           val req: WSRequest = ws.url(url)
             .addHttpHeaders("Accept" -> "application/json")
@@ -144,15 +141,13 @@ class WalmartRepositoryImpl @Inject()
             .withRequestTimeout(timeout.toInt.millis)
           logger.info("Walmart get: " + req.uri)
           val futureResult: Future[Option[WalmartSearchItem]] = req.get().map {
-            response =>
-            {
+            response => {
               val resp = response.json.validate[WalmartSearchItem]
               resp match {
                 case s: JsSuccess[WalmartSearchItem] => Some(s.get)
-                case e: JsError => {
+                case e: JsError =>
                   logger.info("Errors: " + JsError.toJson(e).toString())
                   None
-                }
               }
             }
           }
@@ -160,8 +155,7 @@ class WalmartRepositoryImpl @Inject()
               case Some(entity) => buildProductDetail(entity)
               case _ => None
           }
-        }
-        case Upc => {
+        case Upc =>
           val url = endpoint + '/' + path
           val req: WSRequest = ws.url(url)
             .addHttpHeaders("Accept" -> "application/json")
@@ -178,10 +172,9 @@ class WalmartRepositoryImpl @Inject()
               val resp = response.json.validate[WalmartSearchBaseResponse]
               resp match {
                 case s: JsSuccess[WalmartSearchBaseResponse] => Some(s.get)
-                case e: JsError => {
+                case e: JsError =>
                   logger.info("Errors: " + JsError.toJson(e).toString())
                   None
-                }
               }
             }
           }
@@ -189,7 +182,6 @@ class WalmartRepositoryImpl @Inject()
               case Some(entity) => buildProductDetail(entity)
               case _ => None
           }
-        }
 
         case _ => Future.successful(None)
       }
@@ -197,7 +189,7 @@ class WalmartRepositoryImpl @Inject()
   }
 
   private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
-    val p: HashMap[String, String] = HashMap()
+    val p = scala.collection.mutable.Map[String,String]()
 
     // get search keyword phrase
     if (params.contains(Name)) p("query") = params(Name)

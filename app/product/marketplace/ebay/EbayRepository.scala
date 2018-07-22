@@ -1,3 +1,4 @@
+
 package product.marketplace.ebay
 
 import common.config.AppConfigService
@@ -12,7 +13,6 @@ import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor
 import product.marketplace.ebay.model.{EbayProductDetailResponse, EbaySearchResponse, SearchResultItem}
 import product.model._
 
-import scala.collection.mutable.HashMap
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -167,7 +167,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
   }
   
   private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
-    val p: HashMap[String, String] = HashMap()
+    val p = scala.collection.mutable.Map[String,String]()
 
     // get search keyword phrase
     if (params.contains(Name)) {

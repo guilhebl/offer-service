@@ -10,7 +10,8 @@ import product.marketplace.common.MarketplaceConstants._
 import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
 import product.model._
 
-import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.xml.{Elem, NodeSeq}
@@ -44,7 +45,7 @@ class AmazonRepositoryImpl @Inject()(
     val associateTag: String = appConfigService.properties("amazonUSassociateTag")
     val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
-    val parameters = new HashMap[String, String]()
+    val parameters = mutable.HashMap[String, String]()
     parameters.put("Service", "AWSECommerceService")
     parameters.put("Operation", "ItemSearch")
     parameters.put("AWSAccessKeyId", accessKeyId)
@@ -81,7 +82,7 @@ class AmazonRepositoryImpl @Inject()(
     val associateTag: String = appConfigService.properties("amazonUSassociateTag")
     val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
-    val parameters = new HashMap[String, String]()
+    val parameters = mutable.HashMap[String, String]()
     parameters.put("Service", "AWSECommerceService")
     parameters.put("Operation", "ItemLookup")
     parameters.put("AWSAccessKeyId", accessKeyId)
@@ -165,7 +166,7 @@ class AmazonRepositoryImpl @Inject()(
   }
 
   private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
-    val p: HashMap[String, String] = HashMap()
+    val p = scala.collection.mutable.Map[String,String]()
 
     // get search keyword phrase
     if (params.contains(Name)) {

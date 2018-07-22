@@ -12,7 +12,7 @@ import product.marketplace.common.MarketplaceConstants._
 import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
 import product.model._
 
-import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -69,10 +69,9 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
             val resp = response.json.validate[BestBuySearchResponse]
             resp match {
               case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
-              case e: JsError => {
+              case e: JsError =>
                 logger.info("Errors: " + JsError.toJson(e).toString())
                 None
-              }
             }
           }
         }
@@ -100,10 +99,9 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
             val resp = response.json.validate[BestBuyTrendingResponse]
             resp match {
               case s: JsSuccess[BestBuyTrendingResponse] => Some(s.get)
-              case e: JsError => {
+              case e: JsError =>
                 logger.info("Errors: " + JsError.toJson(e).toString())
                 None
-              }
             }
           }
         }
@@ -158,10 +156,9 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
           val resp = response.json.validate[BestBuySearchResponse]
           resp match {
             case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
-            case e: JsError => {
+            case e: JsError =>
               logger.info("Errors: " + JsError.toJson(e).toString())
               None
-            }
           }
         }
       }
@@ -200,11 +197,10 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
   private def buildProductDetailAttributes(str: Option[String]): ListBuffer[NameValue] = {
     str match {
-      case Some(s) => {
+      case Some(s) =>
         val listBuffer = ListBuffer.empty[NameValue]
         listBuffer += new NameValue("manufacturer", s)
         listBuffer
-      }
       case _ => ListBuffer.empty[NameValue]
     }
   }
@@ -237,10 +233,10 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
   }
 
   private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
-    val p: HashMap[String, String] = HashMap()
+    val p = scala.collection.mutable.Map[String,String]()
 
     // get search keyword phrase
-    if (params.contains(Name)) p("keywords") = buildSearchPath(params(Name))
+    if (params.contains(Name)) p += ("keywords" -> buildSearchPath(params(Name)))
 
     // get page - defaults to 1
     params.get(Page) match {
