@@ -31,13 +31,9 @@ class EmailTask @Inject()(
     logger.info(s"Email Job starting... job enabled: $isEnabled")
 
     if (isEnabled) {
-
       val from = appConfigService.properties("email.default.from")
       val to = appConfigService.properties("email.default.to").split(",")
-
-      val content = views.html.emailtest(
-        "TEST"
-      )
+      val content = views.html.emailtest("TEST", "12345")
 
       val response = emailService.sendEmail(
         EmailRequest(

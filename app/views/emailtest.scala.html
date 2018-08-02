@@ -1,4 +1,4 @@
-@(msg: String)
+@(name: String, account: String)
 <!doctype html>
 
 <html lang="en">
@@ -22,11 +22,11 @@
         }
     </style>
 
-    <title>TelusIOT.com ALARM – Low Public IP Availability</title>
+    <title>searchprod.com – Welcome</title>
 </head>
 
 <body>
-<h3>Hello, @msg</h3>
+<h3>Hello, @name</h3>
 <p>
     this is an automated message from searchprod.com.
     Please do not respond to this message.
@@ -47,8 +47,8 @@
         <th>Total Offers</th>
     </tr>
     <tr>
-        <td>@msg</td>
-        <td>1234</td>
+        <td>@name</td>
+        <td>@account</td>
         <td>0</td>
     </tr>
 </table>
