@@ -23,16 +23,20 @@ class EmailServiceImpl @Inject()(mailerClient: MailerClient, appConfigService: A
     extends EmailService {
 
   private val logger = Logger(this.getClass)
+  private val isEnabled = appConfigService.properties("email.enabled").toBoolean
 
   override def sendEmail(emailRequest: EmailRequest): EmailResponse = {
     logger.info(s"sending email: $emailRequest")
-    val content = views.html.emailtest(emailRequest.templateId)
+    if (!isEnabled) {
+      logger.info("preparing to send email - email disabled")
+      return EmailResponse.ok("Email service disabled")
+    }
 
     val email = Email(
       emailRequest.subject,
       emailRequest.from,
       emailRequest.to,
-      bodyHtml = Some(content.body)
+      bodyHtml = emailRequest.htmlBodyContent
     )
     val result = mailerClient.send(email)
     EmailResponse.ok(result)
