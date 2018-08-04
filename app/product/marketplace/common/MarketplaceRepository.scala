@@ -62,7 +62,7 @@ class MarketplaceRepositoryImpl @Inject()
       }
     }
 
-    val params = req.searchColumns.map(x => (x.name, x.value)).toMap
+    val params = req.searchColumns.filterNot(_.value.isEmpty).map(x => (x.name, x.value)).toMap
     val country = if (params.contains(Country) && isValidCountry(params(Country))) params(Country) else UnitedStates
     val providers = getMarketplaceProvidersByCountry(country)
     val futures = providers.map(search(_, params))
@@ -99,7 +99,7 @@ class MarketplaceRepositoryImpl @Inject()
 
     val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionName)
     collection.insertMany(seq).toFutureOption().map {
-      case Some(x) => {
+      case Some(_) => {
         logger.info("Offer Logs saved in Db")
         Some(seq)
       }
@@ -168,7 +168,6 @@ class MarketplaceRepositoryImpl @Inject()
     * @return
     */
   private def sortByBestResults(offers: Seq[Offer], str: String): Seq[Offer] = {
-
     // filter keywords
     val keywords: Set[String] = str.split("\\s+").toSet
 
@@ -195,6 +194,9 @@ class MarketplaceRepositoryImpl @Inject()
     })
 
     val sortedOfferList = rankList.map(_.offer)
+
+
+
     sortedOfferList
   }
 
