@@ -27,7 +27,7 @@ object StringCommonUtil {
     * @return
     */
   def findAllSubstringMatchCount(str: String, substrings : Set[String]) : Seq[(String, Int)] = {
-    substrings.map(k => (k -> ("(?i)\\Q" + k + "\\E").r.findAllMatchIn(str).length)).toSeq
+    substrings.map(k => k -> ("(?i)\\Q" + k + "\\E").r.findAllMatchIn(str).length).toSeq
   }
 
   /**
@@ -39,11 +39,9 @@ object StringCommonUtil {
     * @return
     */
   def findAllSubstringMatches(str: String, substrings : Set[String]) : Seq[(String, Int)] = {
-    val idxs = substrings.map(k => (k -> ("(?i)\\Q" + k + "\\E").r.findAllMatchIn(str).map(_.start)))
-      .map{ case (keyword,itr) => itr.map((keyword, _))}
-      .flatMap(identity).toSeq
-      .sortBy(_._2)
-    idxs
+    substrings.map(k => k -> ("(?i)\\Q" + k + "\\E").r.findAllMatchIn(str).map(_.start)).flatMap {
+      case (keyword, itr) => itr.map((keyword, _))
+    }.toSeq.sortBy(_._2)
   }
 
   /**
@@ -68,7 +66,7 @@ object StringCommonUtil {
       // check if word exists in window already
       val idxOfWord = currWords.indexOf(idx._1)
 
-      if (!currWords.isEmpty && idxOfWord != -1) {
+      if (currWords.nonEmpty && idxOfWord != -1) {
         currWords = currWords.drop(idxOfWord + 1)
         currIdxs = currIdxs.drop(idxOfWord + 1)
       }

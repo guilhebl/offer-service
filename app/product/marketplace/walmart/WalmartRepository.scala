@@ -109,7 +109,6 @@ class WalmartRepositoryImpl @Inject()
       futureResult.map {
           case Some(entity) => buildList(entity, page, pageSize)
           case _ => None
-
       }
     }
   }

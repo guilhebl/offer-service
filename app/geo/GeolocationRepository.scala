@@ -44,17 +44,16 @@ class GeolocationRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppCon
     .addQueryStringParameters("latlng" -> latlng)
     .addQueryStringParameters("sensor" -> "false")
     .addQueryStringParameters("key" -> apiKey)
-    .withRequestTimeout(30000.millis)
+    .withRequestTimeout(timeout.toInt.millis)
 		.get()
 		.map {
         response => {
-          val resp = (response.json).validate[GeocodeLocationResponse]
+          val resp = response.json.validate[GeocodeLocationResponse]
           resp match {
             case s: JsSuccess[GeocodeLocationResponse] => Some(s.get)
-            case e: JsError => {
+            case e: JsError =>
                 logger.trace("Errors: " + JsError.toJson(e).toString()) 
                 None
-              }
           }
         }
     }

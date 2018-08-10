@@ -141,10 +141,9 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
               val resp = response.json.validate[EbayProductDetailResponse]
               resp match {
                 case s: JsSuccess[EbayProductDetailResponse] => Some(s.get)
-                case e: JsError => {
+                case e: JsError =>
                   logger.info("Errors: " + JsError.toJson(e).toString())
                   None
-                }
               }
             }
           }
@@ -208,8 +207,8 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Ebay) != -1
     
     val list = items.map((item: SearchResultItem) => {
-      val productId = if (!item.productId.isDefined) item.itemId.head else item.productId.get.head.value
-      val imgUrl = if (!item.pictureURLLarge.isDefined) "" else item.pictureURLLarge.get.head
+      val productId = if (item.productId.isEmpty) item.itemId.head else item.productId.get.head.value
+      val imgUrl = if (item.pictureURLLarge.isEmpty) "" else item.pictureURLLarge.get.head
       val itemSellerUrl = if (item.viewItemURL == null) "" else item.viewItemURL.head
 
       new Offer(

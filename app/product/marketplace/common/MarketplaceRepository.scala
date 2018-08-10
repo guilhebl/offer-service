@@ -99,10 +99,9 @@ class MarketplaceRepositoryImpl @Inject()
 
     val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionName)
     collection.insertMany(seq).toFutureOption().map {
-      case Some(_) => {
+      case Some(_) =>
         logger.info("Offer Logs saved in Db")
         Some(seq)
-      }
       case _ => None
     }
   }
