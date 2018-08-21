@@ -30,23 +30,30 @@ import scala.util.{Failure, Success}
   * A pure non-blocking interface
   */
 trait MarketplaceRepository {
-  def search(req : ListRequest) : Future[Option[OfferList]]
-  def getProductDetail(id: String, idType : String, source : String, country : Option[String]) : Future[Option[OfferDetail]]
+  def search(req: ListRequest): Future[Option[OfferList]]
+  def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]]
 }
 
 @Singleton
-class MarketplaceRepositoryImpl @Inject()
-(appConfigService: AppConfigService, walmartRepository: WalmartRepository, bestbuyRepository: BestBuyRepository,
- ebayRepository: EbayRepository, amazonRepository: AmazonRepository, mongoDbService: MongoDbService, cache: RedisCacheService)
-(implicit ec: RepositoryDispatcherContext) extends MarketplaceRepository {
+class MarketplaceRepositoryImpl @Inject()(
+  appConfigService: AppConfigService,
+  walmartRepository: WalmartRepository,
+  bestbuyRepository: BestBuyRepository,
+  ebayRepository: EbayRepository,
+  amazonRepository: AmazonRepository,
+  mongoDbService: MongoDbService,
+  cache: RedisCacheService
+)(implicit ec: RepositoryDispatcherContext)
+    extends MarketplaceRepository {
 
   private val logger = Logger(this.getClass)
   private val CollectionName = "offer"
 
   // utility functions to enable futures to be executed in parallel and later on wait for all to complete either with SUCCESS or FAILURE
-  private def lift[T](futures: Seq[Future[T]]) = futures.map(_.map {
-    Success(_)
-  }.recover { case t => Failure(t) })
+  private def lift[T](futures: Seq[Future[T]]) =
+    futures.map(_.map {
+      Success(_)
+    }.recover { case t => Failure(t) })
 
   private def waitAll[T](futures: Seq[Future[T]]) = Future.sequence(lift(futures))
 
@@ -74,14 +81,26 @@ class MarketplaceRepositoryImpl @Inject()
       val l = x.foldLeft(emptyList)((r, c) => {
         if (c.isSuccess) mergeResponses(r, c.get) else r
       })
-      val response = buildResponse(requestKey, l, country,
-        params.getOrElse(Name, ""), req.sortColumn.getOrElse(""),
-        req.sortOrder.getOrElse("").equals("asc"))
+      val response = buildResponse(
+        requestKey,
+        l,
+        country,
+        params.getOrElse(Name, ""),
+        req.sortColumn.getOrElse(""),
+        req.sortOrder.getOrElse("").equals("asc")
+      )
       response
     }
   }
 
-  private def buildResponse(requestKey: String, offerList: Option[OfferList], country: String, keyword: String, sortBy: String, asc: Boolean): Option[OfferList] = {
+  private def buildResponse(
+    requestKey: String,
+    offerList: Option[OfferList],
+    country: String,
+    keyword: String,
+    sortBy: String,
+    asc: Boolean
+  ): Option[OfferList] = {
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
     if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertIntoDb(sorted.get)
     if (appConfigService.properties("cache.enabled").toBoolean && sorted.isDefined) insertIntoCache(requestKey, sorted.get)
@@ -128,13 +147,16 @@ class MarketplaceRepositoryImpl @Inject()
       case Price => list.sortWith(if (asc) _.price < _.price else _.price > _.price)
       case Rating => list.sortWith(if (asc) _.rating < _.rating else _.rating > _.rating)
       case NumReviews => list.sortWith(if (asc) _.numReviews < _.numReviews else _.numReviews > _.numReviews)
-      case _ => if (!keyword.trim().equals("")) sortByBestResults(list, keyword.trim()) else sortGroupedByProvider(list, country)
+      //case _ => if (!keyword.trim().equals("")) sortByBestResults(list, keyword.trim()) else sortGroupedByProvider(list, country)
+      case _ => if (!keyword.trim().equals("")) sortByGroupedBestResults(list, keyword.trim(), country) else sortGroupedByProvider(list, country)
     }
 
-    Some(new OfferList(
-      sorted,
-      offerList.get.summary
-    ))
+    Some(
+      new OfferList(
+        sorted,
+        offerList.get.summary
+      )
+    )
   }
 
   /**
@@ -152,6 +174,17 @@ class MarketplaceRepositoryImpl @Inject()
     result
   }
 
+  /**
+    * * Sorts using groups and filters out offers that don't have the keywords present
+    *  moving them to last positions
+    **/
+  private def sortByGroupedBestResults(offers: Seq[Offer], str: String, country: String): Seq[Offer] = {
+    val sortedByGroup = sortGroupedByProvider(offers, country)
+    val keywords = str.toLowerCase()
+    val listWithKeywords = sortedByGroup.filter(_.name.toLowerCase().indexOf(keywords) != -1)
+    val listWithoutKeywords = sortedByGroup.diff(listWithKeywords)
+    listWithKeywords ++ listWithoutKeywords
+  }
 
   /**
     * /**
@@ -193,9 +226,6 @@ class MarketplaceRepositoryImpl @Inject()
     })
 
     val sortedOfferList = rankList.map(_.offer)
-
-
-
     sortedOfferList
   }
 
@@ -213,10 +243,10 @@ class MarketplaceRepositoryImpl @Inject()
     }
 
     val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
-    val future = fetchProductDetail(id, idType, source, Some(c)).map {
-      detail => buildDetailResponseItems(detail, Upc, Some(c))
+    val future = fetchProductDetail(id, idType, source, Some(c)).map { detail =>
+      buildDetailResponseItems(detail, Upc, Some(c))
     } recover {
-      case _ : java.util.concurrent.TimeoutException => Future.successful(None)
+      case _: java.util.concurrent.TimeoutException => Future.successful(None)
     }
 
     Await.result(future, timeout.toInt millis)
@@ -262,11 +292,16 @@ class MarketplaceRepositoryImpl @Inject()
 
     val page = if (response.get.summary.page == 0) response2.get.summary.page else response.get.summary.page
 
-    Some(new OfferList(
-      response.get.list ++ response2.get.list,
-      new ListSummary(page, response.get.summary.pageCount + response2.get.summary.pageCount,
-        response.get.summary.totalCount + response2.get.summary.totalCount)
-    ))
+    Some(
+      new OfferList(
+        response.get.list ++ response2.get.list,
+        new ListSummary(
+          page,
+          response.get.summary.pageCount + response2.get.summary.pageCount,
+          response.get.summary.totalCount + response2.get.summary.totalCount
+        )
+      )
+    )
   }
 
   private def mergeResponseProductDetail(response: Option[OfferDetail], response2: Option[OfferDetail]): Option[OfferDetail] = {
@@ -277,22 +312,30 @@ class MarketplaceRepositoryImpl @Inject()
     val item = response2.get
 
     // return a new merged OfferDetail obj.
-    Some(OfferDetail(
-      item1.offer,
-      item1.description,
-      item1.attributes,
-      item1.productDetailItems ++ Seq(new OfferDetailItem(
-        item.offer.partyName,
-        item.offer.semanticName,
-        item.offer.partyImageFileUrl,
-        item.offer.price,
-        item.offer.rating,
-        item.offer.numReviews
-      ))
-    ))
+    Some(
+      OfferDetail(
+        item1.offer,
+        item1.description,
+        item1.attributes,
+        item1.productDetailItems ++ Seq(
+          new OfferDetailItem(
+            item.offer.partyName,
+            item.offer.semanticName,
+            item.offer.partyImageFileUrl,
+            item.offer.price,
+            item.offer.rating,
+            item.offer.numReviews
+          )
+        )
+      )
+    )
   }
 
-  private def buildDetailResponseItems(detail: Option[OfferDetail], idType: String, country: Option[String]): Future[Option[OfferDetail]] = {
+  private def buildDetailResponseItems(
+    detail: Option[OfferDetail],
+    idType: String,
+    country: Option[String]
+  ): Future[Option[OfferDetail]] = {
     val detailWithItems = getProductDetailItems(detail, idType, country)
 
     detailWithItems.map {
@@ -306,9 +349,9 @@ class MarketplaceRepositoryImpl @Inject()
   }
 
   /**
-   * fetch product detail items from sources different than source (competitors other than original product source)
-   */
-  private def getProductDetailItems(detail : Option[OfferDetail], idType : String, country : Option[String]) : Future[Option[OfferDetail]] = {
+    * fetch product detail items from sources different than source (competitors other than original product source)
+    */
+  private def getProductDetailItems(detail: Option[OfferDetail], idType: String, country: Option[String]): Future[Option[OfferDetail]] = {
     if (detail.isEmpty || detail.get.offer.upc.isEmpty || isBlank(detail.get.offer.upc.get)) {
       return Future.successful(detail)
     }

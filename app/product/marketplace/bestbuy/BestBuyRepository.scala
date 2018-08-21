@@ -293,7 +293,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     val list = items.map(
       item =>
         new Offer(
-          if (item.productId.isDefined) item.productId.get.toString else "",
+          buildProductId(item),
           if (item.upc.isDefined) Some(item.upc.get.toString) else None,
           item.name,
           BestBuy,
@@ -307,6 +307,15 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
       )
     )
     list
+  }
+
+  private def buildProductId(item: ProductItem): String = {
+    if (item.productId.isDefined) {
+      return item.productId.get.toString
+    } else if (item.sku.isDefined) {
+      return item.sku.get.toString
+    }
+    ""
   }
 
   private def buildCategoryPath(path: Iterable[CategoryPath]) = {
