@@ -9,17 +9,20 @@ import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
+import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
+import play.api.libs.json.{JsLookupResult, JsValue, Json}
 import play.api.libs.ws.WSClient
 import play.api.mvc.Results.Ok
+import play.api.mvc.{Request, Result}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplication, _}
 import product.marketplace.amazon.AmazonRequestHelper
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
+import scala.concurrent.Future
 import scala.io.Source
 import scala.xml.XML
 
@@ -44,45 +47,41 @@ class ProductControllerPostSearchByKeywordSpec extends PlaySpec with MockitoSuga
     }
   }
 
-  val jsonRequest = Json.parse(Source.fromFile(s"$MockFilesPath/sample_search_request.json").getLines.mkString)
+  val jsonRequest: JsValue = Json.parse(Source.fromFile(s"$MockFilesPath/sample_search_request.json").getLines.mkString)
 
-  val amazonRequestHelperMock = mock[AmazonRequestHelper]
-  when(amazonRequestHelperMock.sign(any[String], any[String], any[String], any[HashMap[String,String]])) thenReturn "https://webservices.amazon.com/signed"
+  val amazonRequestHelperMock: AmazonRequestHelper = mock[AmazonRequestHelper]
+  when(amazonRequestHelperMock.sign(any[String], any[String], any[String], any[mutable.HashMap[String,String]])) thenReturn "https://webservices.amazon.com/signed"
 
-  val appConfigMock = mock[AppConfigService]
+  val appConfigMock: AppConfigService = mock[AppConfigService]
   when(appConfigMock.properties) thenReturn testConfigProperties
   when(appConfigMock.buildImgUrl(Some(any[String]))) thenReturn "https://localhost:5555/assets/images/product-img.png"
   when(appConfigMock.buildImgUrlExternal(Some(any[String]), any[Boolean])) thenReturn "https://localhost:5555/assets/images/product-img-01.jpg"
 
-  val appMock = new GuiceApplicationBuilder()
+  val appMock: Application = new GuiceApplicationBuilder()
     .overrides(bind[AppConfigService].toInstance(appConfigMock))
     .overrides(bind[AmazonRequestHelper].toInstance(amazonRequestHelperMock))
     .overrides(bind[WSClient].toInstance(ws))
     .build
 
   "search by keyword" in new WithApplication(appMock) with WsTestClient {
+    val request: Request[JsValue] = FakeRequest(POST, "/api/v1/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(jsonRequest)
+    val response: Future[Result] = route(app, request).get
+    val json: JsValue = contentAsJson(response)
 
-    val request = FakeRequest(POST, "/api/v1/products").withHeaders(HOST -> "localhost:9000").withCSRFToken.withBody(jsonRequest)
-    val response = route(app, request).get
-    val json = contentAsJson(response)
-
-    val elem0 = (json \ "list")(0)
-    val elem1 = (json \ "list")(1)
-    val summary = json \ "summary"
+    val elem0: JsValue = (json \ "list")(0)
+    val elem1: JsValue = (json \ "list")(1)
+    val summary: JsLookupResult = json \ "summary"
 
     status(response) mustBe OK
     (summary \ "page").as[Int] mustBe 1
     (summary \ "pageCount").as[Int] mustBe 7050
     (summary \ "totalCount").as[Int] mustBe 70494
-
-    (elem0 \ "id").as[String] mustBe "B01GW8XJVU"
-    (elem0 \ "upc").as[String] mustBe "093155171251"
-    (elem0 \ "name").as[String] mustBe "The Elder Scrolls V: Skyrim - Special Edition - PlayStation 4"
-    (elem0 \ "partyName").as[String] mustBe "amazon.com"
-    (elem1 \ "id").as[String] mustBe "B01N332TG8"
-    (elem1 \ "upc").as[String] mustBe ""
-    (elem1 \ "name").as[String] mustBe "The Elder Scrolls V: Skyrim - Nintendo Switch"
-    (elem1 \ "partyName").as[String] mustBe "amazon.com"
+    (elem0 \ "id").as[String] != "" mustBe true
+    (elem0 \ "name").as[String] != "" mustBe true
+    (elem0 \ "partyName").as[String] != "" mustBe true
+    (elem1 \ "id").as[String] != "" mustBe true
+    (elem1 \ "name").as[String] != "" mustBe true
+    (elem1 \ "partyName").as[String] != "" mustBe true
   }
 
 }
