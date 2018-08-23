@@ -1,4 +1,4 @@
-package app.common.util
+package app.common.encrypt
 
 import common.UnitSpec
 import common.encrypt.EncryptUtil

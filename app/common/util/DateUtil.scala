@@ -27,4 +27,16 @@ object DateUtil {
     }
   }
 
+
+  /**
+    *
+    * @param testDate
+    * @param startDate
+    * @param endDate
+    * @return
+    */
+  def isWithinRange(testDate: Date, startDate: Date, endDate: Date): Boolean = {
+    !testDate.before(startDate) || testDate.after(endDate)
+  }
+
 }
