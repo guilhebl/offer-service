@@ -9,14 +9,14 @@ import play.api.libs.json._
 import play.api.libs.ws._
 import product.marketplace.bestbuy.model._
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
+import product.marketplace.common.{MarketplaceRepository, RequestMonitor}
 import product.model._
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait BestBuyRepository extends MarketplaceProviderRepository
+trait BestBuyRepository extends MarketplaceRepository
 
 @Singleton
 class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)
@@ -24,8 +24,15 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
   private val logger = Logger(this.getClass)
 
-  override def search(params: Map[String, String]): Future[Option[OfferList]] = {
+  override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
+    searchAll(OfferList.empty(), req, 1, appConfigService.properties("marketplaceDefaultTimeout").toInt)
+  }
+
+  override def search(request: ListRequest): Future[Option[OfferList]] = {
     ThreadLogger.log("BestBuy Search")
+    val params = ListRequest.filterParams(request)
+
+    // match param names with specific provider params
     val p = filterParamsSearch(params)
 
     // try to acquire lock from request Monitor
@@ -121,8 +128,8 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     }
   }
 
-  override def getProductDetail(id: String, idType: String, country: Option[String]): Future[Option[OfferDetail]] = {
-    ThreadLogger.log("BestBuy getProductDetail")
+  override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
+    ThreadLogger.log(s"BestBuy getProductDetail $id, $idType, $source, $country")
     val idTypeBestBuy = filterIdType(idType)
 
     if (idTypeBestBuy.isEmpty) return Future.successful(None)

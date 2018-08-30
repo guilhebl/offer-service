@@ -16,13 +16,13 @@ import play.api.test.Helpers._
 import product.marketplace.bestbuy.BestBuyRepositoryImpl
 import product.marketplace.common.MarketplaceConstants._
 import product.marketplace.common.RequestMonitor
-import product.model.OfferDetail
+import product.model.{ListRequest, OfferDetail}
 
 import scala.io.Source
 
 @RunWith(classOf[JUnitRunner])
 class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks with MockitoSugar {
-
+  
   val MockPath = s"$MockMarketplaceFilesPath/bestbuy"
 
   private def validateProductDetail(result : OfferDetail) = {
@@ -58,12 +58,8 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "skyrim",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p)).get
+    val params = ListRequest.fromKeyword(ListRequest(), "skyrim")
+    val result = await(service.search(params)).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 2
@@ -100,8 +96,8 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map()
-    val result = await(service.search(p)).get
+    val params = ListRequest()
+    val result = await(service.search(params)).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 1
@@ -121,7 +117,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search by keyword no results should return None") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(search=sasdasdsd)") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/v1/products(search=sasdasds)") => actionBuilder {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_search_no_results.json").getLines.mkString))
       }
     }
@@ -132,15 +128,9 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
     when(requestMonitorMock.isRequestPossible(BestBuy)) thenReturn true
 
     val repositoryDispatcher = getMockWorkerExecutionContext
-
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-
-    val p : Map[String,String] = Map(
-      Name -> "sasdasdsd",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "sasdasds")
+    val result = await(service.search(params))
     result shouldBe None
   }
 
@@ -157,12 +147,8 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "xxxxxx123",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "prod123")
+    val result = await(service.search(params))
 
     result shouldBe None
   }
@@ -184,7 +170,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("5529006", Id, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("5529006", Id, BestBuy, Some(UnitedStates))).get
 
     validateProductDetail(result)
   }
@@ -206,7 +192,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("849803052423", Upc, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("849803052423", Upc, BestBuy, Some(UnitedStates))).get
 
     validateProductDetail(result)
   }
@@ -226,7 +212,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("123456", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("123456", Id, BestBuy, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -245,7 +231,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("123456", Upc, Some(UnitedStates)))
+    val result = await(service.getProductDetail("123456", Upc, BestBuy, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -263,7 +249,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("5529006", "XYZ", Some(UnitedStates)))
+    val result = await(service.getProductDetail("5529006", "XYZ", BestBuy, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -282,7 +268,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("5529006", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("5529006", Id, BestBuy, Some(UnitedStates)))
     result shouldBe None
   }
 }

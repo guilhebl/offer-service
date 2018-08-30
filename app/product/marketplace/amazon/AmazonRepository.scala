@@ -7,16 +7,17 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.ws._
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
+import product.marketplace.common.{MarketplaceRepository, RequestMonitor}
 import product.model._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.xml.{Elem, NodeSeq}
 
-trait AmazonRepository extends MarketplaceProviderRepository
+trait AmazonRepository extends MarketplaceRepository
 
 @Singleton
 class AmazonRepositoryImpl @Inject()(
@@ -29,8 +30,15 @@ class AmazonRepositoryImpl @Inject()(
 
   private val logger = Logger(this.getClass)
 
-  override def search(params: Map[String, String]): Future[Option[OfferList]] = {
-    ThreadLogger.log("Amazon Search")
+  override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
+    searchAll(OfferList.empty(), req, 1, appConfigService.properties("marketplaceDefaultTimeout").toInt)
+  }
+
+  override def search(request: ListRequest): Future[Option[OfferList]] = {
+    ThreadLogger.log(s"Amazon Search $request")
+    val params = ListRequest.filterParams(request)
+
+    // match param names with specific provider params
     val p = filterParamsSearch(params)
 
     // try to acquire lock from request Monitor
@@ -65,7 +73,7 @@ class AmazonRepositoryImpl @Inject()(
     futureResult
   }
 
-  override def getProductDetail(id: String, idType: String, country: Option[String]): Future[Option[OfferDetail]] = {
+  override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
     // try to acquire lock from request Monitor
     if (!requestMonitor.isRequestPossible(Amazon)) {
       logger.info(s"Unable to acquire lock from Request Monitor")
@@ -165,6 +173,11 @@ class AmazonRepositoryImpl @Inject()(
     textList.mkString
   }
 
+  /**
+    * Matches param names with specifc provider names
+    * @param params param with generic domain names
+    * @return params matching specific param names to match provider API
+    */
   private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
     val p = scala.collection.mutable.Map[String,String]()
 

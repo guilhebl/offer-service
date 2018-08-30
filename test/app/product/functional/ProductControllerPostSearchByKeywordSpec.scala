@@ -74,7 +74,7 @@ class ProductControllerPostSearchByKeywordSpec extends PlaySpec with MockitoSuga
 
     status(response) mustBe OK
     (summary \ "page").as[Int] mustBe 1
-    (summary \ "pageCount").as[Int] mustBe 7050
+    (summary \ "pageCount").as[Int] mustBe 3
     (summary \ "totalCount").as[Int] mustBe 70494
     (elem0 \ "id").as[String] != "" mustBe true
     (elem0 \ "name").as[String] != "" mustBe true

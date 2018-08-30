@@ -16,6 +16,7 @@ import play.api.test.Helpers._
 import product.marketplace.common.MarketplaceConstants._
 import product.marketplace.common.RequestMonitor
 import product.marketplace.ebay.EbayRepositoryImpl
+import product.model.ListRequest
 
 import scala.io.Source
 
@@ -42,12 +43,8 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "skyrim",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p)).get
+    val params = ListRequest.fromKeyword(ListRequest(), "skyrim")
+    val result = await(service.search(params)).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 660
@@ -81,10 +78,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-
-    val p : Map[String,String] = Map()
-
-    val result = await(service.search(p)).get
+    val result = await(service.search(ListRequest())).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 3217390
@@ -118,12 +112,8 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "xxxccasd",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "xxxccasd")
+    val result = await(service.search(params))
     result shouldBe None
   }
 
@@ -141,12 +131,8 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "prod123",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "prod123")
+    val result = await(service.search(params))
     result shouldBe None
   }
 
@@ -169,7 +155,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("62923188", Id, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("62923188", Id, Ebay, Some(UnitedStates))).get
 
     result.offer.id shouldEqual "62923188"
     result.offer.upc shouldEqual None
@@ -203,7 +189,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("0883974187416", Upc, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("0883974187416", Upc, Ebay, Some(UnitedStates))).get
 
     result.offer.id shouldEqual "129872399"
     result.offer.upc shouldEqual None
@@ -235,7 +221,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("abcxyz", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("abcxyz", Id, Ebay, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -256,7 +242,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("62923188", "XYZ", Some(UnitedStates)))
+    val result = await(service.getProductDetail("62923188", "XYZ", Ebay, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -277,7 +263,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("32328", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("32328", Id, Ebay, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -298,7 +284,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("088374187416", Upc, Some(UnitedStates)))
+    val result = await(service.getProductDetail("088374187416", Upc, Ebay, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -317,7 +303,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("62923188", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("62923188", Id, Ebay, Some(UnitedStates)))
     result shouldBe None
   }
 }

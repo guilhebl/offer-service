@@ -60,9 +60,9 @@ class ProductControllerGetProductDetailSpec extends PlaySpec with MockitoSugar {
   "get product by Id" in new WithApplication(appMock) with WsTestClient {
 
     val request = FakeRequest(GET, "/api/v1/products/5529006?idType=id&source=bestbuy.com").withHeaders(HOST -> "localhost:9000")
-
     val response = route(app, request).get
     val json = contentAsJson(response)
+
     val elem0 = json \ "offer"
     val attr0 = (json \ "attributes")(0)
     val pdi0 = (json \ "productDetailItems")(0)

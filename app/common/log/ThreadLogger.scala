@@ -20,4 +20,14 @@ object ThreadLogger {
   }
 
 
+  /**
+    * Prints String representation of Current thread
+    */
+  def getThreadInfo(): String = {
+    val threadName = Thread.currentThread.getName
+    val threadId = Thread.currentThread.getId
+    val string = s"Thread - $threadId, $threadName"
+    string
+  }
+
 }

@@ -35,8 +35,10 @@ libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2
 libraryDependencies += "io.gatling.highcharts" % "gatling-charts-highcharts" % gatlingVersion(scalaBinaryVersion.value) % Test
 libraryDependencies += "io.gatling" % "gatling-test-framework" % gatlingVersion(scalaBinaryVersion.value) % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
-libraryDependencies += "de.leanovate.play-mockws" %% "play-mockws" % "2.6.5" % Test
-libraryDependencies += "org.mockito" % "mockito-all" % "1.9.5" % Test
+libraryDependencies += "de.leanovate.play-mockws" %% "play-mockws" % "2.6.6" % Test
+// libraryDependencies += "org.mockito" % "mockito-all" % "1.9.5" % Test
+libraryDependencies += "org.mockito" % "mockito-all" % "1.10.19" % Test
+
 libraryDependencies += specs2 % Test
 
 // The Play project itself
@@ -59,6 +61,6 @@ lazy val docs = (project in file("docs")).enablePlugins(ParadoxPlugin).
 
 javaOptions in Universal ++= Seq(
   // JVM memory tuning
-  "-J-Xmx4096m",
+  "-J-Xmx16384m",
   "-J-Xms1024m"
 )

@@ -15,7 +15,7 @@ import play.api.test.Helpers._
 import product.marketplace.amazon.{AmazonRepositoryImpl, AmazonRequestHelper}
 import product.marketplace.common.MarketplaceConstants._
 import product.marketplace.common.RequestMonitor
-import product.model.OfferDetail
+import product.model.{ListRequest, OfferDetail}
 
 import scala.collection.mutable.HashMap
 import scala.xml.XML
@@ -47,12 +47,9 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "skyrim",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p)).get
+    // search by keywords
+    val params = ListRequest.fromKeyword(ListRequest(), "skyrim")
+    val result = await(service.search(params)).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 6385
@@ -92,8 +89,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map()
-    val result = await(service.search(p)).get
+    val result = await(service.search(ListRequest())).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 372931
@@ -128,12 +124,8 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "xxccxcxcxsdsxcxdsd",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "xxccxcxcxsdsxcxdsd")
+    val result = await(service.search(params))
     result shouldBe None
   }
 
@@ -153,12 +145,8 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "xxxxxx123",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "xxccxcxcxsdsxcxdsd")
+    val result = await(service.search(params))
     result shouldBe None
   }
 
@@ -197,8 +185,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("B01GW8XJVU", Id, Some(UnitedStates))).get
-
+    val result = await(service.getProductDetail("B01GW8XJVU", Id, Amazon, Some(UnitedStates))).get
     validateProductDetail(result, "B01GW8XJVU", 25.0)
   }
 
@@ -221,7 +208,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("XYZ12345678", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("XYZ12345678", Id, Amazon, Some(UnitedStates)))
 
     result shouldBe None
   }
@@ -247,7 +234,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("093155171251", Upc, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("093155171251", Upc, Amazon, Some(UnitedStates))).get
 
     validateProductDetail(result, "B01GW8XJVU", 28.99)
   }
@@ -271,7 +258,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("23456789251", Upc, Some(UnitedStates)))
+    val result = await(service.getProductDetail("23456789251", Upc, Amazon, Some(UnitedStates)))
 
     result shouldBe None
   }
@@ -293,7 +280,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("prod123456", "XYZ", Some(UnitedStates)))
+    val result = await(service.getProductDetail("prod123456", "XYZ", Amazon, Some(UnitedStates)))
 
     result shouldBe None
   }
@@ -315,7 +302,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("prod123456", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("prod123456", Id, Amazon, Some(UnitedStates)))
 
     result shouldBe None
   }

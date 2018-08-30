@@ -6,6 +6,7 @@ import common.cache.RedisCacheService
 import common.config.AppConfigService
 import common.db.MongoDbService
 import common.executor.RepositoryDispatcherContext
+import common.executor.model.BaseDomainRepository
 import common.log.ThreadLogger
 import common.util.CollectionUtil._
 import common.util.EntityValidationUtil._
@@ -24,14 +25,37 @@ import product.model._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
 
 /**
   * A pure non-blocking interface
   */
-trait MarketplaceRepository {
+trait MarketplaceRepository extends BaseDomainRepository {
   def search(req: ListRequest): Future[Option[OfferList]]
+  def searchAll(req: ListRequest): Future[Option[OfferList]]
   def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]]
+
+  /**
+  * Base algorithm for recursive searching
+    * @param acc accumulator
+    * @param request params
+    * @param page current page
+    * @param timeout timeoutUsed that will be used to wait for this call
+    * @return result of single iteration or final result
+    */
+  protected def searchAll(acc: OfferList, request: ListRequest, page: Int, timeout: Int): Future[Option[OfferList]] = {
+    ThreadLogger.log(s"searchAll - request: $request, $page")
+    val future = search(ListRequest.fromPage(request, page))
+    val result = Await.result(future, timeout millis)
+    val merged = OfferList.merge(Some(acc), result)
+
+    // verify if last page
+    if (page + 1 > merged.get.summary.pageCount) {
+      Future.successful(merged)
+    } else {
+      searchAll(merged.get, request, page + 1, timeout)
+    }
+  }
+
 }
 
 @Singleton
@@ -49,16 +73,33 @@ class MarketplaceRepositoryImpl @Inject()(
   private val logger = Logger(this.getClass)
   private val CollectionName = "offer"
 
-  // utility functions to enable futures to be executed in parallel and later on wait for all to complete either with SUCCESS or FAILURE
-  private def lift[T](futures: Seq[Future[T]]) =
-    futures.map(_.map {
-      Success(_)
-    }.recover { case t => Failure(t) })
-
-  private def waitAll[T](futures: Seq[Future[T]]) = Future.sequence(lift(futures))
-
+  /**
+  *  Searches in first page only
+    * @param req params
+    * @return
+    */
   override def search(req: ListRequest): Future[Option[OfferList]] = {
-    logger.info(s"Marketplace search - request: $req")
+    search(req, all = false)
+  }
+
+  /**
+    * Searches in All pages
+    * @param req params
+    * @return
+    */
+  override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
+    search(req, all = true)
+  }
+
+  /**
+  * Internal search method called by both search modes (full and simple)
+    * @param req param
+    * @param all if full search
+    * @return result
+    */
+  private def search(req: ListRequest, all: Boolean): Future[Option[OfferList]] = {
+    ThreadLogger.log(s"Marketplace search - request: $req, all: $all")
+
     // build request key
     val requestKey = Json.toJson(req).toString()
     // check cache
@@ -69,39 +110,47 @@ class MarketplaceRepositoryImpl @Inject()(
       }
     }
 
-    val params = req.searchColumns.filterNot(_.value.isEmpty).map(x => (x.name, x.value)).toMap
-    val country = if (params.contains(Country) && isValidCountry(params(Country))) params(Country) else UnitedStates
-    val providers = getMarketplaceProvidersByCountry(country)
-    val futures = providers.map(search(_, params))
+    val providers = getMarketplaceProviders()
+    val futures = providers.map { p =>
+      if (all) searchSourceAll(p, req) else searchSource(p, req)
+    }
 
     val result = waitAll(futures)
     val emptyList = Option(OfferList(Vector.empty, ListSummary(0, 0, 0)))
 
     result.map { x =>
-      val l = x.foldLeft(emptyList)((r, c) => {
-        if (c.isSuccess) mergeResponses(r, c.get) else r
+      val list = x.foldLeft(emptyList)((r, c) => {
+        if (c.isSuccess) OfferList.merge(r, c.get) else r
       })
       val response = buildResponse(
         requestKey,
-        l,
-        country,
-        params.getOrElse(Name, ""),
-        req.sortColumn.getOrElse(""),
-        req.sortOrder.getOrElse("").equals("asc")
+        req,
+        list
       )
       response
     }
   }
 
+  /**
+  * Builds sorted List response
+    * @param requestKey json representation of request
+    * @param request params object
+    * @param offerList response
+    * @return
+    */
   private def buildResponse(
     requestKey: String,
-    offerList: Option[OfferList],
-    country: String,
-    keyword: String,
-    sortBy: String,
-    asc: Boolean
+    request: ListRequest,
+    offerList: Option[OfferList]
   ): Option[OfferList] = {
+
+    val mapParams = ListRequest.filterParams(request)
+    val country = ListRequest.filterCountry(mapParams)
+    val keyword = mapParams.getOrElse(Name, "")
+    val sortBy = request.sortColumn.getOrElse("")
+    val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
+
     if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertIntoDb(sorted.get)
     if (appConfigService.properties("cache.enabled").toBoolean && sorted.isDefined) insertIntoCache(requestKey, sorted.get)
     sorted
@@ -147,7 +196,6 @@ class MarketplaceRepositoryImpl @Inject()(
       case Price => list.sortWith(if (asc) _.price < _.price else _.price > _.price)
       case Rating => list.sortWith(if (asc) _.rating < _.rating else _.rating > _.rating)
       case NumReviews => list.sortWith(if (asc) _.numReviews < _.numReviews else _.numReviews > _.numReviews)
-      //case _ => if (!keyword.trim().equals("")) sortByBestResults(list, keyword.trim()) else sortGroupedByProvider(list, country)
       case _ => if (!keyword.trim().equals("")) sortByGroupedBestResults(list, keyword.trim(), country) else sortGroupedByProvider(list, country)
     }
 
@@ -243,6 +291,7 @@ class MarketplaceRepositoryImpl @Inject()(
     }
 
     val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
+
     val future = fetchProductDetail(id, idType, source, Some(c)).map { detail =>
       buildDetailResponseItems(detail, Upc, Some(c))
     } recover {
@@ -258,13 +307,21 @@ class MarketplaceRepositoryImpl @Inject()(
 
   private def fetchProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
     val future: Future[Option[OfferDetail]] = source match {
-      case Walmart => walmartRepository.getProductDetail(id, idType, country)
-      case BestBuy => bestbuyRepository.getProductDetail(id, idType, country)
-      case Ebay => ebayRepository.getProductDetail(id, idType, country)
-      case Amazon => amazonRepository.getProductDetail(id, idType, country)
+      case Walmart => walmartRepository.getProductDetail(id, idType, source, country)
+      case BestBuy => bestbuyRepository.getProductDetail(id, idType, source, country)
+      case Ebay => ebayRepository.getProductDetail(id, idType, source, country)
+      case Amazon => amazonRepository.getProductDetail(id, idType, source, country)
       case _ => Future.successful(None)
     }
     future
+  }
+
+  /**
+  *  Gets default provider country - USA marketplace providers
+    * @return
+    */
+  private def getMarketplaceProviders(): Array[String] = {
+    appConfigService.properties("marketplaceProviders").split(",")
   }
 
   private def getMarketplaceProvidersByCountry(country: String): Array[String] = {
@@ -274,34 +331,36 @@ class MarketplaceRepositoryImpl @Inject()(
     }
   }
 
-  private def search(provider: String, params: Map[String, String]): Future[Option[OfferList]] = {
-    provider match {
-      case Walmart => walmartRepository.search(params)
-      case BestBuy => bestbuyRepository.search(params)
-      case Ebay => ebayRepository.search(params)
-      case Amazon => amazonRepository.search(params)
+  /**
+    * Searches in a single source provider and gets results from single page only
+    * @param source the source provider name
+    * @param request the list request
+    * @return
+    */
+  private def searchSource(source: String, request: ListRequest): Future[Option[OfferList]] = {
+    source match {
+      case Walmart => walmartRepository.search(request)
+      case BestBuy => bestbuyRepository.search(request)
+      case Ebay => ebayRepository.search(request)
+      case Amazon => amazonRepository.search(request)
       case _ => Future.successful(None)
     }
   }
 
-  private def mergeResponses(response: Option[OfferList], response2: Option[OfferList]): Option[OfferList] = {
-    ThreadLogger.log("Marketplace mergeResponse")
-
-    if (response.isEmpty) return None
-    if (response2.isEmpty) return response
-
-    val page = if (response.get.summary.page == 0) response2.get.summary.page else response.get.summary.page
-
-    Some(
-      new OfferList(
-        response.get.list ++ response2.get.list,
-        new ListSummary(
-          page,
-          response.get.summary.pageCount + response2.get.summary.pageCount,
-          response.get.summary.totalCount + response2.get.summary.totalCount
-        )
-      )
-    )
+  /**
+    * Searches in a single source provider for all pages
+    * @param source the source provider name
+    * @param request the list request
+    * @return
+    */
+  private def searchSourceAll(source: String, request: ListRequest): Future[Option[OfferList]] = {
+    source match {
+      case Walmart => walmartRepository.searchAll(request)
+      case BestBuy => bestbuyRepository.searchAll(request)
+      case Ebay => ebayRepository.searchAll(request)
+      case Amazon => amazonRepository.searchAll(request)
+      case _ => Future.successful(None)
+    }
   }
 
   private def mergeResponseProductDetail(response: Option[OfferDetail], response2: Option[OfferDetail]): Option[OfferDetail] = {

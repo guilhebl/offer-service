@@ -16,7 +16,7 @@ import play.api.test.Helpers._
 import product.marketplace.common.MarketplaceConstants._
 import product.marketplace.common.RequestMonitor
 import product.marketplace.walmart.WalmartRepositoryImpl
-import product.model.OfferDetail
+import product.model.{ListRequest, OfferDetail}
 
 import scala.io.Source
 
@@ -58,12 +58,8 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "skyrim",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p)).get
+    val params = ListRequest.fromKeyword(ListRequest(), "skyrim")
+    val result = await(service.search(params)).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 3
@@ -97,12 +93,8 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map(
-      Name -> "sk12321323",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "sk12321323")
+    val result = await(service.search(params))
     result shouldBe None
   }
 
@@ -125,9 +117,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val p : Map[String,String] = Map()
-
-    val result = await(service.search(p)).get
+    val result = await(service.search(ListRequest())).get
 
     result.summary.page shouldEqual 1
     result.summary.pageCount shouldEqual 2
@@ -158,13 +148,8 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-
-    val p : Map[String,String] = Map(
-      Name -> "prod123",
-      Page -> "1"
-    )
-
-    val result = await(service.search(p))
+    val params = ListRequest.fromKeyword(ListRequest(), "prod123")
+    val result = await(service.search(params))
     result shouldBe None
   }
 
@@ -187,7 +172,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("55760264", Id, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("55760264", Id, Walmart, Some(UnitedStates))).get
 
     validateProductDetail(result)
   }
@@ -209,7 +194,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("12345", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("12345", Id, Walmart, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -232,7 +217,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("065857174434", Upc, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("065857174434", Upc, Walmart, Some(UnitedStates))).get
 
     validateProductDetail(result)
   }
@@ -254,7 +239,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("12345", Upc, Some(UnitedStates)))
+    val result = await(service.getProductDetail("12345", Upc, Walmart, Some(UnitedStates)))
     result shouldBe None
   }
 
@@ -272,7 +257,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("55760264", "XYZ", Some(UnitedStates)))
+    val result = await(service.getProductDetail("55760264", "XYZ", Walmart, Some(UnitedStates)))
 
     result shouldBe None
   }
@@ -292,7 +277,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("55760264", Id, Some(UnitedStates)))
+    val result = await(service.getProductDetail("55760264", Id, Walmart, Some(UnitedStates)))
     result shouldBe None
   }
 }

@@ -9,14 +9,14 @@ import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
+import product.marketplace.common.{MarketplaceRepository, RequestMonitor}
 import product.marketplace.walmart.model.{WalmartSearchBaseResponse, WalmartSearchItem, WalmartSearchResponse, WalmartTrendingSearchResponse}
 import product.model._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait WalmartRepository extends MarketplaceProviderRepository
+trait WalmartRepository extends MarketplaceRepository
 
 @Singleton
 class WalmartRepositoryImpl @Inject()
@@ -25,11 +25,17 @@ class WalmartRepositoryImpl @Inject()
 
   private val logger = Logger(this.getClass)
 
-  override def search(params: Map[String, String]): Future[Option[OfferList]] = {
-    ThreadLogger.log("Walmart search")
+  override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
+    searchAll(OfferList.empty(), req, 1, appConfigService.properties("marketplaceDefaultTimeout").toInt)
+  }
 
+  override def search(request: ListRequest): Future[Option[OfferList]] = {
+    ThreadLogger.log("Walmart Search")
+    val params = ListRequest.filterParams(request)
+
+    // match param names with specific provider params
     val p = filterParamsSearch(params)
-    
+
     // try to acquire lock from request Monitor
 		if (!requestMonitor.isRequestPossible(Walmart)) {
 		    logger.info(s"Unable to acquire lock from Request Monitor")
@@ -113,7 +119,7 @@ class WalmartRepositoryImpl @Inject()
     }
   }
 
-  override def getProductDetail(id: String, idType : String, country : Option[String]): Future[Option[OfferDetail]] = {
+  override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
       ThreadLogger.log("Walmart get product Detail")
 
       // try to acquire lock from request Monitor

@@ -9,26 +9,33 @@ import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.{MarketplaceProviderRepository, RequestMonitor}
+import product.marketplace.common.{MarketplaceRepository, RequestMonitor}
 import product.marketplace.ebay.model.{EbayProductDetailResponse, EbaySearchResponse, SearchResultItem}
 import product.model._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait EbayRepository extends MarketplaceProviderRepository
+trait EbayRepository extends MarketplaceRepository
 
 @Singleton
 class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService,requestMonitor: RequestMonitor)
 (implicit ec: WorkerDispatcherContext) extends EbayRepository {
 
-  private val logger = Logger(this.getClass)
+  val clazz = this.getClass
+  private val logger = Logger(clazz)
 
-  override def search(params: Map[String, String]): Future[Option[OfferList]] = {
-    ThreadLogger.log("Ebay Search")
+  override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
+    searchAll(OfferList.empty(), req, 1, appConfigService.properties("marketplaceDefaultTimeout").toInt)
+  }
 
+  override def search(request: ListRequest): Future[Option[OfferList]] = {
+    ThreadLogger.log(s"$clazz Search")
+    val params = ListRequest.filterParams(request)
+
+    // match param names with specific provider params
     val p = filterParamsSearch(params)
-    
+
     // try to acquire lock from request Monitor
 		if (!requestMonitor.isRequestPossible(Ebay)) {
 		    logger.info(s"Unable to acquire lock from Request Monitor")
@@ -91,7 +98,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     }
   }
 
-  override def getProductDetail(id: String, idType : String, country : Option[String]): Future[Option[OfferDetail]] = {
+  override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
     // try to acquire lock from request Monitor
     if (!requestMonitor.isRequestPossible(Ebay)) {
       logger.info(s"Unable to acquire lock from Request Monitor")

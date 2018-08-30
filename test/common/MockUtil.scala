@@ -53,7 +53,9 @@ object MockBaseUtil {
   def getProductList = productList
   def getProductDetail = offerDetail
   def getProductDetailNoItems = offerDetailNoItems
-  def getProductDetailNoItemsNoUpc = offerDetailNoItemsNoUpc
+  def getProductDetailNoItemsNoUpc = {
+    offerDetailNoItemsNoUpc
+  }
   def getProductDetailNoItemsParty2 = offerDetailNoItemsParty2
   def testConfigProperties = appConfigProps
 
