@@ -151,17 +151,17 @@ class MarketplaceRepositoryImpl @Inject()(
     val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
 
-    if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertIntoDb(sorted.get)
-    if (appConfigService.properties("cache.enabled").toBoolean && sorted.isDefined) insertIntoCache(requestKey, sorted.get)
+    if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertOfferList(sorted.get)
+    if (appConfigService.properties("cache.enabled").toBoolean && sorted.isDefined) setCacheOfferList(requestKey, sorted.get)
     sorted
   }
 
   /**
     * check if DB is enabled and saves record
     *
-    * @param item
+    * @param item OfferList
     */
-  private def insertIntoDb(item: OfferList): Future[Option[Seq[OfferLog]]] = {
+  private def insertOfferList(item: OfferList): Future[Option[Seq[OfferLog]]] = {
     val cal = Calendar.getInstance()
     val seq = item.list.map(OfferLog(_, cal.getTimeInMillis)).toSeq
 
@@ -179,7 +179,7 @@ class MarketplaceRepositoryImpl @Inject()(
     *
     * @param item
     */
-  private def insertIntoCache(requestKey: String, item: OfferList): Unit = {
+  private def setCacheOfferList(requestKey: String, item: OfferList): Unit = {
     logger.info(s"cache set: $requestKey")
     val obj = Json.toJson(item).toString()
     val savedResult = cache.set(requestKey, obj)

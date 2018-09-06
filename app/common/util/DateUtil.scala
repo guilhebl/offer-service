@@ -91,6 +91,15 @@ object DateUtil {
     date
   }
 
+  /**
+    * gets the timestamp for start of month of current month
+    */
+  def getStartOfMonthTimestamp(): Date = {
+    val cal = Calendar.getInstance()
+    cal.set(Calendar.DAY_OF_MONTH, cal.getActualMinimum(Calendar.DAY_OF_MONTH))
+    val date = DateUtil.atStartOfDay(cal.getTime)
+    date
+  }
 
   /**
     * gets last N months and the date timestamp of the last day of the month at the last time
@@ -104,7 +113,7 @@ object DateUtil {
   /**
     * Checks if a given date is in current month and year
     */
-  def isWithinMonthAndYear(d: Date): Boolean = {
+  def isWithinCurrentMonthAndYear(d: Date): Boolean = {
     val cal = Calendar.getInstance
     isWithinMonthAndYear(d, cal.getTime)
   }
