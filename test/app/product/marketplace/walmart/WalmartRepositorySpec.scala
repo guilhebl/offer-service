@@ -1,5 +1,6 @@
 package app.product.marketplace.walmart
 
+import common.BaseFunSuiteDomainTest
 import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
@@ -7,9 +8,6 @@ import org.junit.runner.RunWith
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FunSuite, Matchers}
 import play.api.libs.json.Json
 import play.api.mvc.Results._
 import play.api.test.Helpers._
@@ -21,7 +19,7 @@ import product.model.{ListRequest, OfferDetail}
 import scala.io.Source
 
 @RunWith(classOf[JUnitRunner])
-class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks with MockitoSugar {
+class WalmartRepositorySpec extends BaseFunSuiteDomainTest {
 
   val MockPath = s"$MockMarketplaceFilesPath/walmart"
 
@@ -41,7 +39,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search by keyword should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/search") => actionBuilder {
+      case (GET, "http://api.walmartlabs.com/v1/search") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/walmart_sample_search_response.json").getLines.mkString))
       }
     }
@@ -78,7 +76,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search by keyword no results should return None") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/search") => actionBuilder {
+      case (GET, "http://api.walmartlabs.com/v1/search") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/walmart_sample_search_no_results.json").getLines.mkString))
       }
     }
@@ -100,7 +98,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search with no params should return Trending List result") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/trends") => actionBuilder {
+      case (GET, "http://api.walmartlabs.com/v1/trends") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/walmart_sample_trend_response.json").getLines.mkString))
       }
     }
@@ -136,7 +134,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search by keyword when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/search") => actionBuilder { Ok }
+      case (GET, "http://api.walmartlabs.com/v1/search") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]
@@ -155,7 +153,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail by Id should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/items/55760264") => actionBuilder {
+      case (GET, "http://api.walmartlabs.com/v1/items/55760264") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/walmart_sample_product_detail_response.json").getLines.mkString))
       }
     }
@@ -179,7 +177,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail by Id not found should return None") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/items/12345") => actionBuilder {
+      case (GET, "http://api.walmartlabs.com/v1/items/12345") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/walmart_get_by_id_invalid.json").getLines.mkString))
       }
     }
@@ -200,7 +198,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail by UPC should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/items") => actionBuilder {
+      case (GET, "http://api.walmartlabs.com/v1/items") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/walmart_sample_upc_prod_detail_response.json").getLines.mkString))
       }
     }
@@ -224,7 +222,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail by UPC not found should return None") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/items") => actionBuilder {
+      case (GET, "http://api.walmartlabs.com/v1/items") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/walmart_get_by_upc_not_found.json").getLines.mkString))
       }
     }
@@ -245,7 +243,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail using invalid idType should return None") {
     val ws = MockWS {
-      case (GET, "http://api.walmartlabs.com/v1/items") => actionBuilder { Ok }
+      case (GET, "http://api.walmartlabs.com/v1/items") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]
@@ -264,7 +262,7 @@ class WalmartRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder { Ok }
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]

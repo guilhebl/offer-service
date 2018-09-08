@@ -1,5 +1,6 @@
 package app.product.marketplace.bestbuy
 
+import common.BaseFunSuiteDomainTest
 import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
@@ -7,9 +8,6 @@ import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FunSuite, Matchers}
 import play.api.libs.json.Json
 import play.api.mvc.Results._
 import play.api.test.Helpers._
@@ -21,7 +19,7 @@ import product.model.{ListRequest, OfferDetail}
 import scala.io.Source
 
 @RunWith(classOf[JUnitRunner])
-class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks with MockitoSugar {
+class BestBuyRepositorySpec extends BaseFunSuiteDomainTest {
   
   val MockPath = s"$MockMarketplaceFilesPath/bestbuy"
 
@@ -41,7 +39,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(search=skyrim)") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/v1/products(search=skyrim)") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_sample_search_response.json").getLines.mkString))
       }
     }
@@ -79,7 +77,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search with no params should return Trending search response") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/beta/products/trendingViewed") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/beta/products/trendingViewed") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_sample_trending_response.json").getLines.mkString))
       }
     }
@@ -117,7 +115,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search by keyword no results should return None") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(search=sasdasds)") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/v1/products(search=sasdasds)") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_search_no_results.json").getLines.mkString))
       }
     }
@@ -136,7 +134,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("search by keyword when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(search=prod123)") => actionBuilder { Ok }
+      case (GET, "https://api.bestbuy.com/v1/products(search=prod123)") => Action { Ok }
     }
     val appConfigMock = mock[AppConfigService]
     when(appConfigMock.properties) thenReturn testConfigProperties
@@ -155,7 +153,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail by Id should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_get_by_id_prod_detail_response.json").getLines.mkString))
       }
     }
@@ -177,7 +175,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail by Upc should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(upc=849803052423)") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/v1/products(upc=849803052423)") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_get_by_upc_prod_detail_response.json").getLines.mkString))
       }
     }
@@ -199,7 +197,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail using invalid Id should return None") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(productId=123456)") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/v1/products(productId=123456)") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_get_by_id_prod_detail_not_found.json").getLines.mkString))
       }
     }
@@ -218,7 +216,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail using invalid Upc should return None") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(upc=123456)") => actionBuilder {
+      case (GET, "https://api.bestbuy.com/v1/products(upc=123456)") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/best_buy_get_by_upc_prod_detail_not_found.json").getLines.mkString))
       }
     }
@@ -237,7 +235,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail using invalid idType should return None") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => actionBuilder { Ok }
+      case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]
@@ -255,7 +253,7 @@ class BestBuyRepositorySpec extends FunSuite with Matchers with PropertyChecks w
 
   test("getProductDetail when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => actionBuilder { Ok }
+      case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]

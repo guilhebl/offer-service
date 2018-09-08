@@ -1,31 +1,32 @@
 # offer-service
 
-Searchprod offer-service (AKA Offer-backend) is an open source project that aims to bring together several world-wide marketplaces and provide best offers and results in a single consolidated platform.
-It's goal is to unify diverse market sources in order to connect people directly with products and services that they need through a global marketplace platform.
-Connecting users to local and international marketplaces and enabling the consumer to receive informative insights of a product or service in a transparent manner.
-Find out about prices, availability, features, reviews and more searching in one place and receiving the best results from multiple sources.
-Join the project and help make the world a better place for trade.
+Offer Service - is an open source project that aims to bring together several worldwide marketplaces and APIs and provide 
+insightful data and analytics from a large variety of sources into a single place.
 
+Current Supported Marketplaces:
+
+- Amazon
+- Walmart
+- BestBuy
+- Ebay
 
 ##### Checkout [Current LIVE beta](https://searchprod.com)
 
 &nbsp;&nbsp;
 
+*** 
+
 ##### Current stack:
 
-. [Frontend](https://github.com/guilhebl/offer-web) -> Angular4, Typescript, NgRx, Gulp
+. [Frontend](https://github.com/guilhebl/platform)
 
-. [Backend](https://github.com/guilhebl/offer-java) -> Java
+. [Backend](https://github.com/guilhebl/offer-service)
 
-##### Future stack:
-
-. [Frontend](https://github.com/guilhebl/angular-starter) -> Angular5, Typescript, Webpack
-
-. [Backend](https://github.com/guilhebl/offer-service) -> Scala
 
 ## Getting started
 
-in order to get started you must first create your own API keys at:
+in order to get started you must first create your own API keys at each
+of these company's website (Search for these and follow instructions on each website):
 
 - Amazon Product Advertising API
 
@@ -36,12 +37,11 @@ in order to get started you must first create your own API keys at:
 - BestBuy API
 
 After creating your api keys set the values in "app-config.properties" file replacing proper entries
+with each provider's own key. 
 
 ### Running
 
-You need to download and install sbt for this application to run.
-
-Once you have sbt installed, the following at the command prompt will start up Play in development mode:
+Using SBT the following at the command prompt will start up Play in development mode:
 
 ```bash
 sbt run
@@ -49,7 +49,6 @@ sbt run
 
 Play will start up on the HTTP port at <http://localhost:9000/>.   You don't need to deploy or reload anything -- changing any source code while the server is running will automatically recompile and hot-reload the application on the next HTTP request.
 
-This is the RESTful API backend for offer-web based on [Scala Play REST sample](https://github.com/playframework/play-scala-rest-api-example).
 
 1. To start app run: ``` sbt run```
  

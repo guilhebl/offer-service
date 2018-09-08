@@ -1,12 +1,11 @@
 package app.product.functional
 
+import common.BaseDomainTest
 import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.PlaySpec
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -32,22 +31,22 @@ import scala.xml.XML
   *
   * @author gui
   */
-class ProductControllerPostSearchSpec extends PlaySpec with MockitoSugar {
+class ProductControllerPostSearchSpec extends BaseDomainTest {
 
   val ws = MockWS {
-    case (GET, "http://api.walmartlabs.com/v1/trends") => actionBuilder {
+    case (GET, "http://api.walmartlabs.com/v1/trends") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/walmart/walmart_sample_trend_response.json").getLines.mkString))
     }
 
-    case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+    case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/ebay/ebay_sample_search_no_keyword.json").getLines.mkString))
     }
 
-    case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+    case (GET, "https://webservices.amazon.com/signed") => Action {
       Ok(XML.loadFile(s"$MockMarketplaceFilesPath/amazon/amazon_sample_search_no_keyword.xml"))
     }
 
-    case (GET, "https://api.bestbuy.com/beta/products/trendingViewed") => actionBuilder {
+    case (GET, "https://api.bestbuy.com/beta/products/trendingViewed") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/bestbuy/best_buy_sample_trending_response.json").getLines.mkString))
     }
   }

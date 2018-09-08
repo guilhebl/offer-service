@@ -1,5 +1,6 @@
 package app.product.marketplace.amazon
 
+import common.BaseFunSuiteDomainTest
 import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
@@ -7,9 +8,6 @@ import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FunSuite, Matchers}
 import play.api.mvc.Results._
 import play.api.test.Helpers._
 import product.marketplace.amazon.{AmazonRepositoryImpl, AmazonRequestHelper}
@@ -21,13 +19,13 @@ import scala.collection.mutable.HashMap
 import scala.xml.XML
 
 @RunWith(classOf[JUnitRunner])
-class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks with MockitoSugar {
+class AmazonRepositorySpec extends BaseFunSuiteDomainTest {
 
   val MockPath = s"$MockMarketplaceFilesPath/amazon"
 
   test("search should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+      case (GET, "https://webservices.amazon.com/signed") => Action {
         Ok(XML.loadFile(s"$MockPath/amazon_sample_search_response.xml"))
       }
     }
@@ -69,7 +67,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("search with no params should return Random search term from config file") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+      case (GET, "https://webservices.amazon.com/signed") => Action {
         Ok(XML.loadFile(s"$MockPath/amazon_sample_search_no_keyword.xml"))
       }
     }
@@ -109,7 +107,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("search by keyword no results should return None") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder { Ok(XML.loadFile(s"$MockPath/amazon_search_no_results.xml")) }
+      case (GET, "https://webservices.amazon.com/signed") => Action { Ok(XML.loadFile(s"$MockPath/amazon_search_no_results.xml")) }
     }
 
     val appConfigMock = mock[AppConfigService]
@@ -131,7 +129,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("search by keyword when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder { Ok }
+      case (GET, "https://webservices.amazon.com/signed") => Action { Ok }
     }
     val appConfigMock = mock[AppConfigService]
     when(appConfigMock.properties) thenReturn testConfigProperties
@@ -166,7 +164,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("getProductDetail by Id should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+      case (GET, "https://webservices.amazon.com/signed") => Action {
         Ok(XML.loadFile(s"$MockPath/amazon_get_product_detail_by_id.xml"))
       }
     }
@@ -191,7 +189,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("getProductDetail using invalid Id should return None") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+      case (GET, "https://webservices.amazon.com/signed") => Action {
         Ok(XML.loadFile(s"$MockPath/amazon_get_product_detail_by_id_not_found.xml"))
       }
     }
@@ -215,7 +213,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("getProductDetail by Upc should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+      case (GET, "https://webservices.amazon.com/signed") => Action {
         Ok(XML.loadFile(s"$MockPath/amazon_get_product_detail_by_upc.xml"))
       }
     }
@@ -241,7 +239,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("getProductDetail using invalid Upc should return None") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+      case (GET, "https://webservices.amazon.com/signed") => Action {
         Ok(XML.loadFile(s"$MockPath/amazon_get_product_detail_by_upc_not_found.xml"))
       }
     }
@@ -265,7 +263,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("getProductDetail using invalid idType should return None") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder { Ok }
+      case (GET, "https://webservices.amazon.com/signed") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]
@@ -287,7 +285,7 @@ class AmazonRepositorySpec extends FunSuite with Matchers with PropertyChecks wi
 
   test("getProductDetail when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "https://webservices.amazon.com/signed") => actionBuilder { Ok }
+      case (GET, "https://webservices.amazon.com/signed") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]

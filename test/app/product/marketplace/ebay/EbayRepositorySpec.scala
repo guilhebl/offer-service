@@ -1,5 +1,6 @@
 package app.product.marketplace.ebay
 
+import common.BaseFunSuiteDomainTest
 import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
@@ -7,9 +8,6 @@ import org.junit.runner.RunWith
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FunSuite, Matchers}
 import play.api.libs.json.Json
 import play.api.mvc.Results._
 import play.api.test.Helpers._
@@ -21,13 +19,13 @@ import product.model.ListRequest
 import scala.io.Source
 
 @RunWith(classOf[JUnitRunner])
-class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with MockitoSugar {
+class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
   val MockPath = s"$MockMarketplaceFilesPath/ebay"
 
   test("search should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_sample_search_response.json").getLines.mkString))
       }
     }
@@ -63,7 +61,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("search with no params should return Random search term from config file") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_sample_search_no_keyword.json").getLines.mkString))
       }
     }
@@ -98,7 +96,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("search by keyword no results should return None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_search_no_results.json").getLines.mkString))
       }
     }
@@ -119,7 +117,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("search by keyword when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder { Ok }
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action { Ok }
     }
     val appConfigMock = mock[AppConfigService]
     when(appConfigMock.properties) thenReturn testConfigProperties
@@ -138,7 +136,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("getProductDetail by Id should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_sample_product_detail_response.json").getLines.mkString))
       }
     }
@@ -172,7 +170,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("getProductDetail by UPC should produce a valid JSON") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_find_by_upc.json").getLines.mkString))
       }
     }
@@ -206,7 +204,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("getProductDetail using invalid id should return None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_invalid_product_id_response.json").getLines.mkString))
       }
     }
@@ -227,7 +225,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("getProductDetail using invalid idType should return None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_sample_product_detail_response.json").getLines.mkString))
       }
     }
@@ -248,7 +246,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("getProductDetail by Id no results should return None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_find_by_id_no_result.json").getLines.mkString))
       }
     }
@@ -269,7 +267,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("getProductDetail by Upc no results should return None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
         Ok(Json.parse(Source.fromFile(s"$MockPath/ebay_find_by_upc_no_result.json").getLines.mkString))
       }
     }
@@ -290,7 +288,7 @@ class EbayRepositorySpec extends FunSuite with Matchers with PropertyChecks with
 
   test("getProductDetail when requestMonitor is Busy expect Future successful None") {
     val ws = MockWS {
-      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder { Ok }
+      case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action { Ok }
     }
 
     val appConfigMock = mock[AppConfigService]

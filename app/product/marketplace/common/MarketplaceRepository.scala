@@ -48,7 +48,7 @@ trait MarketplaceRepository extends BaseDomainRepository {
     val result = Await.result(future, timeout millis)
     val merged = OfferList.merge(Some(acc), result)
 
-    // verify if last page
+    // verify if above last page stop
     if (page + 1 > merged.get.summary.pageCount) {
       Future.successful(merged)
     } else {
@@ -71,7 +71,7 @@ class MarketplaceRepositoryImpl @Inject()(
     extends MarketplaceRepository {
 
   private val logger = Logger(this.getClass)
-  private val CollectionName = "offer"
+  private val CollectionNameOfferListLog = "offerListLog"
 
   /**
   *  Searches in first page only
@@ -151,7 +151,7 @@ class MarketplaceRepositoryImpl @Inject()(
     val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
 
-    if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertOfferList(sorted.get)
+    if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertOfferLogs(sorted.get)
     if (appConfigService.properties("cache.enabled").toBoolean && sorted.isDefined) setCacheOfferList(requestKey, sorted.get)
     sorted
   }
@@ -159,13 +159,15 @@ class MarketplaceRepositoryImpl @Inject()(
   /**
     * check if DB is enabled and saves record
     *
+    * inserts a log of each single offer in list
+    *
     * @param item OfferList
     */
-  private def insertOfferList(item: OfferList): Future[Option[Seq[OfferLog]]] = {
+  private def insertOfferLogs(item: OfferList): Future[Option[Seq[OfferLog]]] = {
     val cal = Calendar.getInstance()
     val seq = item.list.map(OfferLog(_, cal.getTimeInMillis)).toSeq
 
-    val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionName)
+    val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionNameOfferListLog)
     collection.insertMany(seq).toFutureOption().map {
       case Some(_) =>
         logger.info("Offer Logs saved in Db")
@@ -177,7 +179,6 @@ class MarketplaceRepositoryImpl @Inject()(
   /**
     * check if cache is enabled and saves record inside in-memory cache (redis)
     *
-    * @param item
     */
   private def setCacheOfferList(requestKey: String, item: OfferList): Unit = {
     logger.info(s"cache set: $requestKey")
@@ -186,6 +187,15 @@ class MarketplaceRepositoryImpl @Inject()(
     if (!savedResult) logger.info("object not saved in cache")
   }
 
+  /**
+  * Sorts list according to various fields
+    * @param offerList list to be sorted
+    * @param country country
+    * @param keyword keyword
+    * @param sortBy sortBy string
+    * @param asc sort order if "asc" = true otherwise false
+    * @return sorted list
+    */
   private def sortList(offerList: Option[OfferList], country: String, keyword: String, sortBy: String, asc: Boolean): Option[OfferList] = {
     if (offerList.isEmpty) return None
     val list = offerList.get.list.toSeq
@@ -210,7 +220,7 @@ class MarketplaceRepositoryImpl @Inject()(
   /**
     * Groups the results in buckets with each provider appearing in the first group of results
     *
-    * @param offers
+    * @param offers collection of offers
     * @return
     */
   private def sortGroupedByProvider(offers: Seq[Offer], country: String): Seq[Offer] = {
@@ -318,7 +328,7 @@ class MarketplaceRepositoryImpl @Inject()(
 
   /**
   *  Gets default provider country - USA marketplace providers
-    * @return
+    * @return an array containing each provider of USA market
     */
   private def getMarketplaceProviders(): Array[String] = {
     appConfigService.properties("marketplaceProviders").split(",")

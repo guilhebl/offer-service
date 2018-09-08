@@ -60,6 +60,6 @@ lazy val docs = (project in file("docs")).enablePlugins(ParadoxPlugin).
 
 javaOptions in Universal ++= Seq(
   // JVM memory tuning
-  "-J-Xmx16384m",
+  "-J-Xmx2056m",
   "-J-Xms1024m"
 )

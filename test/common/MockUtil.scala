@@ -1,31 +1,26 @@
 package common
 
-import akka.actor
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import common.executor.{RepositoryDispatcherContext, WorkerDispatcherContext}
 import play.api.libs.json.Json
-import play.api.mvc.{DefaultActionBuilder, PlayBodyParsers}
 import product.model.{OfferDetail, OfferList}
 
-import scala.concurrent.ExecutionContext.Implicits._
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.ExecutionContext
 import scala.io.Source
 
 object MockBaseUtil {
 
   val MockFilesPath = "test/resources/mock/product"
   val MockMarketplaceFilesPath = s"$MockFilesPath/marketplace"
-  private val actorSystem: ActorSystem = actor.ActorSystem("unit-testing")
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-  val bodyParser: PlayBodyParsers = PlayBodyParsers()
-  val actionBuilder: DefaultActionBuilder = DefaultActionBuilder(bodyParser.anyContent)
-
-  sys addShutdownHook {
-    materializer.shutdown()
-    Await.result(actorSystem.terminate(), Duration.Inf)
-  }
+//  private val actorSystem: ActorSystem = actor.ActorSystem("unit-testing")
+//  implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+//  val bodyParser: PlayBodyParsers = PlayBodyParsers()
+//  val actionBuilder: DefaultActionBuilder = DefaultActionBuilder(bodyParser.anyContent)
+//
+//  sys addShutdownHook {
+//    materializer.shutdown()
+//    Await.result(actorSystem.terminate(), Duration.Inf)
+//  }
 
   /* MOCK data */
   private val userDir = System.getProperty("user.dir")

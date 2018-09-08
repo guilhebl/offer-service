@@ -1,5 +1,6 @@
 package app.product.functional
 
+import common.BaseDomainTest
 import common.MockBaseUtil._
 import common.config.AppConfigService
 import mockws.MockWS
@@ -7,8 +8,6 @@ import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.PlaySpec
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
@@ -23,22 +22,22 @@ import scala.io.Source
 import scala.xml.XML
 
 @RunWith(classOf[JUnitRunner])
-class ProductControllerGetProductDetailSpec extends PlaySpec with MockitoSugar {
+class ProductControllerGetProductDetailSpec extends BaseDomainTest {
 
   val ws = MockWS {
-    case (GET, "http://api.walmartlabs.com/v1/items") => actionBuilder {
+    case (GET, "http://api.walmartlabs.com/v1/items") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/walmart/walmart_sample_upc_prod_detail_response.json").getLines.mkString))
     }
 
-    case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => actionBuilder {
+    case (GET, "http://svcs.ebay.com/services/search/FindingService/v1") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/ebay/ebay_find_by_upc.json").getLines.mkString))
     }
 
-    case (GET, "https://webservices.amazon.com/signed") => actionBuilder {
+    case (GET, "https://webservices.amazon.com/signed") => Action {
       Ok(XML.loadFile(s"$MockMarketplaceFilesPath/amazon/amazon_get_product_detail_by_upc.xml"))
     }
 
-    case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => actionBuilder {
+    case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/bestbuy/best_buy_get_by_id_prod_detail_response.json").getLines.mkString))
     }
   }
