@@ -210,7 +210,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     Some(resp)
   }
 
-  private def buildListItems(items: Iterable[SearchResultItem]): Iterable[Offer] = {
+  private def buildListItems(items: Vector[SearchResultItem]): Vector[Offer] = {
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Ebay) != -1
     
     val list = items.map((item: SearchResultItem) => {
@@ -255,8 +255,8 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
         0,
         0),
         "",
-        List[NameValue](),
-        List[OfferDetailItem]())
+        Vector[NameValue](),
+        Vector[OfferDetailItem]())
 
       Some(detail)
     }

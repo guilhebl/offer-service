@@ -3,8 +3,8 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class PrimaryCategory (
-    categoryId : Iterable[String],    
-    categoryName : Iterable[String]
+    categoryId : Vector[String],    
+    categoryName : Vector[String]
 )
 
 object PrimaryCategory {

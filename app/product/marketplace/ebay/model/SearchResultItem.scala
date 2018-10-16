@@ -3,25 +3,25 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class SearchResultItem (
-    productId : Option[Iterable[ProductId]],
-    itemId : Iterable[String],
-    title : Iterable[String],
-    globalId : Iterable[String],
-    galleryURL : Iterable[String],
-    viewItemURL : Iterable[String],
-    paymentMethod : Iterable[String],
-    postalCode : Option[Iterable[String]],
-    location : Iterable[String],
-    country : Iterable[String],
-    primaryCategory : Iterable[PrimaryCategory],
-    shippingInfo : Iterable[ShippingInfo],
-    sellingStatus : Iterable[SellingStatus],
-    listingInfo : Iterable[ListingInfo],
-    returnsAccepted : Iterable[String],
-    pictureURLLarge : Option[Iterable[String]],
-    condition : Iterable[ConditionInfo],
-    isMultiVariationListing : Iterable[String],
-    topRatedListing : Iterable[String]
+    productId : Option[Vector[ProductId]],
+    itemId : Vector[String],
+    title : Vector[String],
+    globalId : Vector[String],
+    galleryURL : Vector[String],
+    viewItemURL : Vector[String],
+    paymentMethod : Vector[String],
+    postalCode : Option[Vector[String]],
+    location : Vector[String],
+    country : Vector[String],
+    primaryCategory : Vector[PrimaryCategory],
+    shippingInfo : Vector[ShippingInfo],
+    sellingStatus : Vector[SellingStatus],
+    listingInfo : Vector[ListingInfo],
+    returnsAccepted : Vector[String],
+    pictureURLLarge : Option[Vector[String]],
+    condition : Vector[ConditionInfo],
+    isMultiVariationListing : Vector[String],
+    topRatedListing : Vector[String]
 )
 
 object SearchResultItem {

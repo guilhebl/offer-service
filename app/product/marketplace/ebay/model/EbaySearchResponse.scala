@@ -3,7 +3,7 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class EbaySearchResponse (
-  findItemsByKeywordsResponse: Iterable[EbayFindingServiceResponse]
+  findItemsByKeywordsResponse: Vector[EbayFindingServiceResponse]
 )
 
 object EbaySearchResponse {

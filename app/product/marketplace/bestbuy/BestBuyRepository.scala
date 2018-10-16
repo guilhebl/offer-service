@@ -196,19 +196,19 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
       ),
       "",
       buildProductDetailAttributes(item.manufacturer),
-      ListBuffer.empty[OfferDetailItem]
+      Vector.empty[OfferDetailItem]
     )
 
     Some(detail)
   }
 
-  private def buildProductDetailAttributes(str: Option[String]): ListBuffer[NameValue] = {
+  private def buildProductDetailAttributes(str: Option[String]): Vector[NameValue] = {
     str match {
       case Some(s) =>
         val listBuffer = ListBuffer.empty[NameValue]
         listBuffer += new NameValue("manufacturer", s)
-        listBuffer
-      case _ => ListBuffer.empty[NameValue]
+        listBuffer.toVector
+      case _ => Vector.empty[NameValue]
     }
   }
 
@@ -272,7 +272,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     Some(resp)
   }
 
-  private def buildTrendingListItems(items: Iterable[ProductSpecialOfferItem]): Iterable[Offer] = {
+  private def buildTrendingListItems(items: Vector[ProductSpecialOfferItem]): Vector[Offer] = {
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(BestBuy) != -1
 
     val list = items.map((item: ProductSpecialOfferItem) => {
@@ -294,7 +294,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     list
   }
 
-  private def buildListItems(items: Iterable[ProductItem]): Iterable[Offer] = {
+  private def buildListItems(items: Vector[ProductItem]): Vector[Offer] = {
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(BestBuy) != -1
 
     val list = items.map(
@@ -325,7 +325,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     ""
   }
 
-  private def buildCategoryPath(path: Iterable[CategoryPath]) = {
+  private def buildCategoryPath(path: Vector[CategoryPath]) = {
     val sb: StringBuilder = new StringBuilder("")
     for (p <- path) {
       sb.append(p.name + "-")

@@ -3,10 +3,10 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class PaginationOutput (
-    pageNumber : Iterable[String],
-    entriesPerPage : Iterable[String],
-    totalPages : Iterable[String],
-    totalEntries : Iterable[String]
+    pageNumber : Vector[String],
+    entriesPerPage : Vector[String],
+    totalPages : Vector[String],
+    totalEntries : Vector[String]
 )
 
 object PaginationOutput {

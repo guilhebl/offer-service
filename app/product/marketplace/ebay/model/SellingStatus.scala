@@ -3,10 +3,10 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class SellingStatus (
-    currentPrice : Iterable[PriceInfo],
-    convertedCurrentPrice : Iterable[PriceInfo],
-    sellingState : Iterable[String],
-    timeLeft : Iterable[String]
+    currentPrice : Vector[PriceInfo],
+    convertedCurrentPrice : Vector[PriceInfo],
+    sellingState : Vector[String],
+    timeLeft : Vector[String]
 )
 
 object SellingStatus {

@@ -10,35 +10,6 @@ Current Supported Marketplaces:
 - BestBuy
 - Ebay
 
-##### Checkout [Current LIVE beta](https://searchprod.com)
-
-&nbsp;&nbsp;
-
-*** 
-
-##### Current stack:
-
-. [Frontend](https://github.com/guilhebl/platform)
-
-. [Backend](https://github.com/guilhebl/offer-service)
-
-
-## Getting started
-
-in order to get started you must first create your own API keys at each
-of these company's website (Search for these and follow instructions on each website):
-
-- Amazon Product Advertising API
-
-- Ebay Product Search API
-
-- Walmart API
-
-- BestBuy API
-
-After creating your api keys set the values in "app-config.properties" file replacing proper entries
-with each provider's own key. 
-
 ### Running
 
 Using SBT the following at the command prompt will start up Play in development mode:

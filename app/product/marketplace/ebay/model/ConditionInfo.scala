@@ -3,8 +3,8 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class ConditionInfo (
-    conditionId : Iterable[String],
-    conditionDisplayName : Iterable[String]
+    conditionId : Vector[String],
+    conditionDisplayName : Vector[String]
 )
 
 object ConditionInfo {

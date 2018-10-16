@@ -3,7 +3,7 @@ package product.model
 import play.api.libs.json._
 
 case class OfferList (
-  list: Iterable[Offer],
+  list: Vector[Offer],
   summary: ListSummary
 )
 
@@ -16,7 +16,7 @@ object OfferList {
 
   def empty(): OfferList = {
     OfferList(
-      Seq.empty[Offer],
+      Vector.empty[Offer],
       ListSummary(
         page = 1,
         pageCount = 0,

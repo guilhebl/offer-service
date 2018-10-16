@@ -1,6 +1,7 @@
 package common.encrypt
 
 import java.security.SecureRandom
+import java.util.UUID.randomUUID
 
 /**
   * Generates random alpha-numeric strings
@@ -18,4 +19,9 @@ object RandomStringGenerator {
     }
     new String(buf)
   }
+
+  def generateUUIDString(): String = {
+    randomUUID().toString
+  }
+
 }

@@ -5,8 +5,9 @@ import play.api.libs.json._
 case class OfferDetail (
     offer: Offer,
     description: String,
-    attributes: Iterable[NameValue],
-    productDetailItems: Iterable[OfferDetailItem]
+    attributes: Vector[NameValue],
+    productDetailItems: Vector[OfferDetailItem],
+    lastOfferLog: Option[OfferLog] = None
 )
 
 object OfferDetail {

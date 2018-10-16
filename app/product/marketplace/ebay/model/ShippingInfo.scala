@@ -3,12 +3,12 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class ShippingInfo (
-    shippingServiceCost : Option[Iterable[PriceInfo]],
-    shippingType : Iterable[String],
-    shipToLocations : Iterable[String],
-    expeditedShipping : Iterable[String],
-    oneDayShippingAvailable : Iterable[String],
-    handlingTime : Iterable[String]
+    shippingServiceCost : Option[Vector[PriceInfo]],
+    shippingType : Vector[String],
+    shipToLocations : Vector[String],
+    expeditedShipping : Vector[String],
+    oneDayShippingAvailable : Vector[String],
+    handlingTime : Vector[String]
 )
 
 object ShippingInfo {

@@ -157,14 +157,14 @@ class AmazonRepositoryImpl @Inject()(
         itemAttrs \ "Model",
         itemAttrs \ "Publisher"
       ),
-      ListBuffer.empty[OfferDetailItem]
+      Vector.empty[OfferDetailItem]
     )
 
     Some(detail)
   }
 
-  private def buildProductDetailAttributes(attrs: NodeSeq*): Iterable[NameValue] = {
-    attrs.filterNot(_.isEmpty).map(n => new NameValue(n.head.label, n.text))
+  private def buildProductDetailAttributes(attrs: NodeSeq*): Vector[NameValue] = {
+    attrs.filterNot(_.isEmpty).map(n => new NameValue(n.head.label, n.text)).toVector
   }
 
   private def buildDescription(node: NodeSeq): String = {
@@ -234,7 +234,7 @@ class AmazonRepositoryImpl @Inject()(
       )
     }
 
-    val resp = new OfferList(list, summary)
+    val resp = new OfferList(list.toVector, summary)
     Some(resp)
   }
 

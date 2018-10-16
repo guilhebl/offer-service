@@ -37,7 +37,7 @@ class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: 
   }
 
   /**
-    * Only to be used in DEV mode not in PROD
+    * Only to be used in DEV mode - localhost - not in PROD
     * @param result
     */
   implicit class RichResult (result: Result) {

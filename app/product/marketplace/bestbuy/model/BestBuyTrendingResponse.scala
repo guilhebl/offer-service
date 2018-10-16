@@ -4,7 +4,7 @@ import play.api.libs.json.Json
 
 case class BestBuyTrendingResponse(
     metadata : Metadata,
-    results : Iterable[ProductSpecialOfferItem]
+    results : Vector[ProductSpecialOfferItem]
 )
 
 object BestBuyTrendingResponse {

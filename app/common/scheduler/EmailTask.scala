@@ -51,7 +51,7 @@ class EmailTask @Inject()(
   // This is necessary to avoid thread leaks, specially if you are using a custom ExecutionContext
   lifecycle.addStopHook { () =>
     Future.successful(
-      Await.result(actorSystem.terminate(), 60.seconds)
+      Await.result(actorSystem.terminate(), 240.seconds)
     )
   }
 

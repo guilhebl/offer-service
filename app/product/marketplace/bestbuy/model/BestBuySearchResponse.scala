@@ -12,7 +12,7 @@ case class BestBuySearchResponse(
     totalTime : String,
     partial : Boolean,
     canonicalUrl : String,
-    products : Iterable[ProductItem]
+    products : Vector[ProductItem]
 )
 
 object BestBuySearchResponse {

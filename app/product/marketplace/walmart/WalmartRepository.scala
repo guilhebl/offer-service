@@ -237,8 +237,8 @@ class WalmartRepositoryImpl @Inject()
         item.customerRating.getOrElse("0").toFloat,
         item.numReviews.getOrElse(0)),
       filterHtmlTags(item.longDescription),
-      List[NameValue](),
-      List[OfferDetailItem]())
+      Vector[NameValue](),
+      Vector[OfferDetailItem]())
 
     Some(offerDetail)
   }
@@ -247,7 +247,7 @@ class WalmartRepositoryImpl @Inject()
     buildProductDetail(item.items.head)
   }
 
-  private def buildListItems(items: Iterable[WalmartSearchItem]): Iterable[Offer] = {
+  private def buildListItems(items: Vector[WalmartSearchItem]): Vector[Offer] = {
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Walmart) != -1
 
     val list = items.map((item: WalmartSearchItem) => {

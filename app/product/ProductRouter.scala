@@ -17,7 +17,6 @@ class ProductRouter @Inject()(controller: ProductController) extends SimpleRoute
     url.toString()
   }
 
-
   override def routes: Routes = {
     case POST(p"/") =>
       controller.search

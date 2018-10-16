@@ -9,7 +9,7 @@ case class WalmartSearchResponse (
   totalResults: Int,  
   start: Int, 
   numItems: Int,
-  items: Iterable[WalmartSearchItem]
+  items: Vector[WalmartSearchItem]
 )
 
 object WalmartSearchResponse {

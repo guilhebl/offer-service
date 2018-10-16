@@ -3,13 +3,13 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class EbayFindingServiceResponse (
-    ack : Iterable[String], 
-    version : Iterable[String],
-    timestamp : Iterable[String],
-    itemSearchURL : Option[Iterable[String]],
-    searchResult : Option[Iterable[SearchResult]],
-    paginationOutput : Option[Iterable[PaginationOutput]],
-    errorMessage : Option[Iterable[ErrorMessage]]
+    ack : Vector[String], 
+    version : Vector[String],
+    timestamp : Vector[String],
+    itemSearchURL : Option[Vector[String]],
+    searchResult : Option[Vector[SearchResult]],
+    paginationOutput : Option[Vector[PaginationOutput]],
+    errorMessage : Option[Vector[ErrorMessage]]
 )
 
 object EbayFindingServiceResponse {

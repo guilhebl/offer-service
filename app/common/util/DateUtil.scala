@@ -1,7 +1,7 @@
 package common.util
 
 import java.text.SimpleDateFormat
-import java.time.{LocalDateTime, LocalTime, ZoneId}
+import java.time.{Instant, LocalDateTime, LocalTime, ZoneId}
 import java.util.{Calendar, Date, TimeZone}
 
 import org.joda.time.{DateTime, DateTimeZone}
@@ -102,6 +102,24 @@ object DateUtil {
   }
 
   /**
+  * Is that moment (a) not before 24 hours ago, AND (b) before now (not in the future)?
+    * @param date date to test with
+    * @return if in last 24h or not
+    */
+  def isWithinLast24Hours(date: Date) = {
+    import java.time.temporal.ChronoUnit
+    val lastTime = date.toInstant
+    val now = Instant.now
+    val twentyFourHoursEarlier = now.minus(24, ChronoUnit.HOURS)
+    val within24Hours = (!lastTime.isBefore(twentyFourHoursEarlier)) && lastTime.isBefore(now)
+    within24Hours
+  }
+
+  def isWithinLast24Hours(timestamp: Long): Boolean = {
+    isWithinLast24Hours(new Date(timestamp))
+  }
+
+    /**
     * gets last N months and the date timestamp of the last day of the month at the last time
     * of day (in system default timezone)
     */
@@ -114,8 +132,11 @@ object DateUtil {
     * Checks if a given date is in current month and year
     */
   def isWithinCurrentMonthAndYear(d: Date): Boolean = {
-    val cal = Calendar.getInstance
-    isWithinMonthAndYear(d, cal.getTime)
+    isWithinMonthAndYear(d, Calendar.getInstance.getTime)
+  }
+
+  def isWithinCurrentMonthAndYear(timestamp: Long): Boolean = {
+    isWithinMonthAndYear(new Date(timestamp), Calendar.getInstance.getTime)
   }
 
   /**

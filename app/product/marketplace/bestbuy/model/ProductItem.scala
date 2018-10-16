@@ -16,7 +16,7 @@ case class ProductItem(
   department : Option[String],
   customerReviewAverage : Option[Float],
   customerReviewCount : Option[Int],
-  categoryPath : Iterable[CategoryPath]
+  categoryPath : Vector[CategoryPath]
 )
 
 object ProductItem {

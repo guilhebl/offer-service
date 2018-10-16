@@ -9,10 +9,13 @@ import common.executor.RepositoryDispatcherContext
 import common.executor.model.BaseDomainRepository
 import common.log.ThreadLogger
 import common.util.CollectionUtil._
+import common.util.DateUtil
 import common.util.EntityValidationUtil._
 import common.util.StringCommonUtil._
 import javax.inject.{Inject, Singleton}
 import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.model.Sorts.descending
 import play.api.Logger
 import play.api.libs.json.Json
 import product.marketplace.amazon.AmazonRepository
@@ -35,7 +38,8 @@ trait MarketplaceRepository extends BaseDomainRepository {
   def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]]
 
   /**
-  * Base algorithm for recursive searching
+    * Base algorithm for recursive searching
+    *
     * @param acc accumulator
     * @param request params
     * @param page current page
@@ -55,7 +59,6 @@ trait MarketplaceRepository extends BaseDomainRepository {
       searchAll(merged.get, request, page + 1, timeout)
     }
   }
-
 }
 
 @Singleton
@@ -71,10 +74,11 @@ class MarketplaceRepositoryImpl @Inject()(
     extends MarketplaceRepository {
 
   private val logger = Logger(this.getClass)
-  private val CollectionNameOfferListLog = "offerListLog"
+  private val CollectionOfferLog = "offerLog"
 
   /**
-  *  Searches in first page only
+    *  Searches in first page only
+    *
     * @param req params
     * @return
     */
@@ -84,6 +88,7 @@ class MarketplaceRepositoryImpl @Inject()(
 
   /**
     * Searches in All pages
+    *
     * @param req params
     * @return
     */
@@ -92,7 +97,8 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   /**
-  * Internal search method called by both search modes (full and simple)
+    * Internal search method called by both search modes (full and simple)
+    *
     * @param req param
     * @param all if full search
     * @return result
@@ -111,8 +117,7 @@ class MarketplaceRepositoryImpl @Inject()(
     }
 
     val providers = getMarketplaceProviders()
-    val futures = providers.map { p =>
-      if (all) searchSourceAll(p, req) else searchSource(p, req)
+    val futures = providers.map { p => if (all) searchSourceAll(p, req) else searchSource(p, req)
     }
 
     val result = waitAll(futures)
@@ -132,7 +137,8 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   /**
-  * Builds sorted List response
+    * Builds sorted List response
+    *
     * @param requestKey json representation of request
     * @param request params object
     * @param offerList response
@@ -161,19 +167,111 @@ class MarketplaceRepositoryImpl @Inject()(
     *
     * inserts a log of each single offer in list
     *
+    * - a snapshot of the object in time
+    *
     * @param item OfferList
     */
-  private def insertOfferLogs(item: OfferList): Future[Option[Seq[OfferLog]]] = {
+  private def insertOfferLogs(item: OfferList): Unit = {
+    logger.info("Insert OfferLogs")
     val cal = Calendar.getInstance()
-    val seq = item.list.map(OfferLog(_, cal.getTimeInMillis)).toSeq
+    val offersWithUpc = item.list.withFilter(_.upc.isDefined)
 
-    val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionNameOfferListLog)
-    collection.insertMany(seq).toFutureOption().map {
-      case Some(_) =>
-        logger.info("Offer Logs saved in Db")
-        Some(seq)
-      case _ => None
+    offersWithUpc.foreach(x => {
+      val upc = x.upc.get
+      val lastOfferLog = getLastInsertedOfferLog(upc)
+
+      val offerLog = lastOfferLog match {
+        case Some(last) =>
+          OfferLog(upc, x, cal.getTimeInMillis, last.totalViews + 1, getCurrentDayViews(last) + 1, getCurrentMonthViews(last) + 1)
+        case _ => OfferLog(upc, x, cal.getTimeInMillis, 1, 1, 1)
+      }
+
+      insertOfferLog(offerLog)
+    })
+  }
+
+  private def getCurrentDayViews(offerLog: OfferLog): Long = {
+    if (DateUtil.isWithinLast24Hours(offerLog.timestamp)) offerLog.currentDayViews else 0
+  }
+
+  private def getCurrentMonthViews(offerLog: OfferLog): Long = {
+    if (DateUtil.isWithinCurrentMonthAndYear(offerLog.timestamp)) offerLog.currentMonthViews else 0
+  }
+
+  /**
+    * Gets the last inserted timestamp record for this upc
+    *
+    * @param upc upc to search in DB
+    * @return
+    */
+  private def getLastInsertedOfferLog(upc: String): Option[OfferLog] = {
+    if (appConfigService.properties("db.enabled").toBoolean) {
+      val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionOfferLog)
+
+      val f = collection
+        .find(equal("upc", upc))
+        .sort(descending("timestamp"))
+        .limit(1)
+        .toFuture()
+
+      val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+      val result = Await.result(f, timeout.toInt millis)
+      logger.info(s"getLastInsertedOfferLog: $result")
+
+      if (result.isEmpty) {
+        logger.info("No Records Found!")
+        None
+      } else {
+        Some(result.head)
+      }
+
+    } else {
+      None
     }
+  }
+
+  /**
+    * check if DB is enabled and saves record
+    *
+    * inserts a log of offer
+    *
+    * @param item OffeLog
+    */
+  private def insertOfferLog(item: OfferLog): Unit = {
+    logger.info(s"Insert Offer Log " + item.upc)
+    val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionOfferLog)
+    val f = collection.insertOne(item).toFutureOption().map {
+      case Some(_) => logger.info("Record Inserted in Db")
+      case _ => logger.info("ERROR: Failed to Insert record in Db!")
+    }
+
+    val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+    Await.result(f, timeout.toInt millis)
+  }
+
+  /**
+    * check if DB is enabled and deletes all price logs with current date past 1 timewindow (defaults to 1 month)
+    *
+    */
+  private def deleteOldOfferPriceLogs(): Future[Long] = {
+    logger.info("delete old price logs")
+    val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferLog)
+    val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+    val startOfMonth = DateUtil.getStartOfMonthTimestamp()
+
+    // get all
+    val f = collection.find(lte("timestamp", startOfMonth)).toFuture()
+    val result = Await.result(f, timeout.toInt millis)
+    result.foreach(r => logger.info(s"Delete: $r"))
+
+    // remove all items before start of month
+    val timestamps = result.map(_.timestamp)
+    val future = collection.deleteMany(in("timestamp", timestamps: _*)).toFuture().map { x =>
+      logger.info("Deleted " + x.getDeletedCount + " records")
+      x.getDeletedCount
+    }
+
+    future
   }
 
   /**
@@ -188,7 +286,8 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   /**
-  * Sorts list according to various fields
+    * Sorts list according to various fields
+    *
     * @param offerList list to be sorted
     * @param country country
     * @param keyword keyword
@@ -198,7 +297,7 @@ class MarketplaceRepositoryImpl @Inject()(
     */
   private def sortList(offerList: Option[OfferList], country: String, keyword: String, sortBy: String, asc: Boolean): Option[OfferList] = {
     if (offerList.isEmpty) return None
-    val list = offerList.get.list.toSeq
+    val list: Vector[Offer] = offerList.get.list
 
     val sorted = sortBy match {
       case Id => list.sortWith(if (asc) _.id < _.id else _.id > _.id)
@@ -206,12 +305,13 @@ class MarketplaceRepositoryImpl @Inject()(
       case Price => list.sortWith(if (asc) _.price < _.price else _.price > _.price)
       case Rating => list.sortWith(if (asc) _.rating < _.rating else _.rating > _.rating)
       case NumReviews => list.sortWith(if (asc) _.numReviews < _.numReviews else _.numReviews > _.numReviews)
-      case _ => if (!keyword.trim().equals("")) sortByGroupedBestResults(list, keyword.trim(), country) else sortGroupedByProvider(list, country)
+      case _ =>
+        if (!keyword.trim().equals("")) sortByGroupedBestResults(list, keyword.trim(), country) else sortGroupedByProvider(list, country)
     }
 
     Some(
       new OfferList(
-        sorted,
+        sorted.toVector,
         offerList.get.summary
       )
     )
@@ -302,8 +402,7 @@ class MarketplaceRepositoryImpl @Inject()(
 
     val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
 
-    val future = fetchProductDetail(id, idType, source, Some(c)).map { detail =>
-      buildDetailResponseItems(detail, Upc, Some(c))
+    val future = fetchProductDetail(id, idType, source, Some(c)).map { detail => fetchDetailItemsAndLastLog(detail, Upc, Some(c))
     } recover {
       case _: java.util.concurrent.TimeoutException => Future.successful(None)
     }
@@ -327,7 +426,8 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   /**
-  *  Gets default provider country - USA marketplace providers
+    *  Gets default provider country - USA marketplace providers
+    *
     * @return an array containing each provider of USA market
     */
   private def getMarketplaceProviders(): Array[String] = {
@@ -343,6 +443,7 @@ class MarketplaceRepositoryImpl @Inject()(
 
   /**
     * Searches in a single source provider and gets results from single page only
+    *
     * @param source the source provider name
     * @param request the list request
     * @return
@@ -359,6 +460,7 @@ class MarketplaceRepositoryImpl @Inject()(
 
   /**
     * Searches in a single source provider for all pages
+    *
     * @param source the source provider name
     * @param request the list request
     * @return
@@ -400,20 +502,32 @@ class MarketplaceRepositoryImpl @Inject()(
     )
   }
 
-  private def buildDetailResponseItems(
+  /**
+    * Decorates an Offer Detail fetching and adding additional info for this offer detail such as
+    *
+    * - detail items from other sources using same UPC
+    * - analytics contained in last log using UPC as param
+    *
+    * @param detail
+    * @param idType
+    * @param country
+    * @return
+    */
+  private def fetchDetailItemsAndLastLog(
     detail: Option[OfferDetail],
     idType: String,
     country: Option[String]
   ): Future[Option[OfferDetail]] = {
+
     val detailWithItems = getProductDetailItems(detail, idType, country)
 
-    detailWithItems.map {
-      case Some(x) =>
-        if (appConfigService.properties("cache.enabled").toBoolean) {
-          cache.set(x.offer.id, Json.toJson(x).toString())
-        }
-        Some(x)
-      case _ => None
+    detailWithItems.map { x =>
+      if (x.isDefined && x.get.offer.upc.isDefined) {
+        val lastOfferLog = getLastInsertedOfferLog(x.get.offer.upc.get)
+        Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems, lastOfferLog))
+      } else {
+        x
+      }
     }
   }
 

@@ -6,7 +6,7 @@ import play.api.libs.json._
 
 case class WalmartTrendingSearchResponse (
  time: Date,
- items: Iterable[WalmartSearchItem]
+ items: Vector[WalmartSearchItem]
 )
 
 object WalmartTrendingSearchResponse {

@@ -35,5 +35,4 @@ class ProductRepositoryImpl @Inject()(marketplaceRepository: MarketplaceReposito
   override def get(id : String, idType : String, source : String, country : Option[String])(implicit mc: MarkerContext): Future[Option[OfferDetail]] = {
     marketplaceRepository.getProductDetail(id, idType, source, country)
   }
-
 }

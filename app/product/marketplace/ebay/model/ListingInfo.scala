@@ -3,12 +3,12 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class ListingInfo (
-    bestOfferEnabled : Iterable[String],
-    buyItNowAvailable : Iterable[String],
-    startTime : Iterable[String],
-    endTime : Iterable[String],
-    listingType : Iterable[String],
-    gift : Iterable[String]
+    bestOfferEnabled : Vector[String],
+    buyItNowAvailable : Vector[String],
+    startTime : Vector[String],
+    endTime : Vector[String],
+    listingType : Vector[String],
+    gift : Vector[String]
 )
 
 object ListingInfo {

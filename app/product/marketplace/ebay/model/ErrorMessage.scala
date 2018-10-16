@@ -3,7 +3,7 @@ package product.marketplace.ebay.model
 import play.api.libs.json._
 
 case class ErrorMessage (
-  error : Iterable[ErrorItem]
+  error : Vector[ErrorItem]
 )
 
 object ErrorMessage {

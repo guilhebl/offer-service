@@ -6,7 +6,7 @@ case class WalmartSpecialOfferSearchResponse(
   specialOffer: String,
   format: String,
   nextPage: String,
-  items: Iterable[WalmartSearchItem]
+  items: Vector[WalmartSearchItem]
 )
 
 object WalmartSpecialOfferSearchResponse {

@@ -5,7 +5,7 @@ import play.api.libs.json._
 
 case class SearchResult (
  count : String,
- item : Iterable[SearchResultItem]
+ item : Vector[SearchResultItem]
 )
 
 object SearchResult {
@@ -14,7 +14,7 @@ object SearchResult {
     */
   implicit val documentFormatter: Format[SearchResult] = (
     (__ \ "@count").format[String] and
-    (__ \ "item").format[Iterable[SearchResultItem]]
+    (__ \ "item").format[Vector[SearchResultItem]]
   ) (SearchResult.apply, unlift(SearchResult.unapply))
         
 }
