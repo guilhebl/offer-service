@@ -1,5 +1,6 @@
 package product
 
+import common.util.FormMappingUtil._
 import javax.inject.Inject
 import play.api.data.Form
 import play.api.libs.json.Json
@@ -18,7 +19,7 @@ class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: 
     import play.api.data.Forms._
     Form(
       mapping(
-        "searchColumns" -> seq(
+        "searchColumns" -> vector(
             mapping(
                 "name" -> nonEmptyText, 
                 "value" -> nonEmptyText

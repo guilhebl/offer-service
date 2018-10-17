@@ -55,7 +55,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val mongoRepositoryMock = mock[MongoDbService]
       val redisCacheServiceMock = mock[RedisCacheService]
 
-      val req = new ListRequest(Seq.empty, Some(sortBy), Some(sortOrder), Some(1), Some(10))
+      val req = new ListRequest(Vector.empty, Some(sortBy), Some(sortOrder), Some(1), Some(10))
 
       val cacheKey = Json.toJson(req).toString()
       when(redisCacheServiceMock.get(cacheKey))thenReturn None

@@ -5,7 +5,7 @@ import play.api.libs.json._
 import product.marketplace.common.MarketplaceConstants._
 
 case class ListRequest(
-    searchColumns : Seq[NameValue] = Seq.empty,
+    searchColumns : Vector[NameValue] = Vector.empty,
     sortColumn : Option[String] = None,
     sortOrder : Option[String] = None,
 	  page : Option[Int] = None,
@@ -16,7 +16,7 @@ object ListRequest {
   implicit val formatter = Json.format[ListRequest]
 
   def buildFromQuery(q: String): ListRequest = {
-    ListRequest(searchColumns = Seq(
+    ListRequest(searchColumns = Vector(
       NameValue(Name, q)
     ))
   }
@@ -41,7 +41,7 @@ object ListRequest {
     */
   def fromKeyword(currentRequest: ListRequest, keyword: String): ListRequest = {
     ListRequest(
-      Seq(NameValue(Name, keyword)),
+      Vector(NameValue(Name, keyword)),
       currentRequest.sortColumn,
       currentRequest.sortOrder,
       currentRequest.page,

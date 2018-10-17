@@ -10,7 +10,6 @@ import play.api.Logger
 import play.api.inject.ApplicationLifecycle
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 @Singleton
 class EmailTask @Inject()(
@@ -46,13 +45,6 @@ class EmailTask @Inject()(
       logger.info(s"Email sent: $response")
     }
     logger.info(s"Email Job completed")
-  }
-
-  // This is necessary to avoid thread leaks, specially if you are using a custom ExecutionContext
-  lifecycle.addStopHook { () =>
-    Future.successful(
-      Await.result(actorSystem.terminate(), 240.seconds)
-    )
   }
 
 }

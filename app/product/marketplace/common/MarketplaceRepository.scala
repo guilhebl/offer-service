@@ -117,8 +117,12 @@ class MarketplaceRepositoryImpl @Inject()(
     }
 
     val providers = getMarketplaceProviders()
-    val futures = providers.map { p => if (all) searchSourceAll(p, req) else searchSource(p, req)
-    }
+    val futures = for (p <- providers) yield searchSource(p, req)
+
+//    val response = waitAll(listFutures)
+//    response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
+
+//    val futures = providers.map { p => if (all) searchSourceAll(p, req) else searchSource(p, req) }
 
     val result = waitAll(futures)
     val emptyList = Option(OfferList(Vector.empty, ListSummary(0, 0, 0)))
