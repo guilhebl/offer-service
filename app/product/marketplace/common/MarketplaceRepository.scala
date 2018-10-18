@@ -83,7 +83,8 @@ class MarketplaceRepositoryImpl @Inject()(
     * @return
     */
   override def search(req: ListRequest): Future[Option[OfferList]] = {
-    search(req, all = false)
+    search(req, searchSource)
+
   }
 
   /**
@@ -93,7 +94,7 @@ class MarketplaceRepositoryImpl @Inject()(
     * @return
     */
   override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
-    search(req, all = true)
+    search(req, searchSourceAll)
   }
 
   /**
@@ -103,8 +104,8 @@ class MarketplaceRepositoryImpl @Inject()(
     * @param all if full search
     * @return result
     */
-  private def search(req: ListRequest, all: Boolean): Future[Option[OfferList]] = {
-    ThreadLogger.log(s"Marketplace search - request: $req, all: $all")
+  private def search(req: ListRequest, f: (String, ListRequest) => Future[Option[OfferList]]): Future[Option[OfferList]] = {
+    ThreadLogger.log(s"Marketplace search - request: $req")
 
     // build request key
     val requestKey = Json.toJson(req).toString()
@@ -117,13 +118,7 @@ class MarketplaceRepositoryImpl @Inject()(
     }
 
     val providers = getMarketplaceProviders()
-    val futures = for (p <- providers) yield searchSource(p, req)
-
-//    val response = waitAll(listFutures)
-//    response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
-
-//    val futures = providers.map { p => if (all) searchSourceAll(p, req) else searchSource(p, req) }
-
+    val futures = for (p <- providers) yield f(p, req)
     val result = waitAll(futures)
     val emptyList = Option(OfferList(Vector.empty, ListSummary(0, 0, 0)))
 
