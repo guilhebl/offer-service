@@ -30,20 +30,23 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
   override def search(request: ListRequest): Future[Option[OfferList]] = {
     ThreadLogger.log("BestBuy Search")
-    val params = ListRequest.filterParams(request)
 
     // match param names with specific provider params
-    val p = filterParamsSearch(params)
+    val params = filterParamsSearch(ListRequest.filterEmptyParams(request))
 
     // try to acquire lock from request Monitor
-    if (!requestMonitor.isRequestPossible(BestBuy)) {
-      logger.info(s"Unable to acquire lock from Request Monitor")
-      return Future.successful(None)
+    if (!requestMonitor.isRequestPossible(BestBuy) || params.isEmpty) {
+      logger.info(s"Unable to acquire lock from Request Monitor or params is empty")
+      Future.successful(None)
+    } else {
+      search(params)
     }
+  }
 
+  private def search(params: Map[String, String]): Future[Option[OfferList]] = {
     val endpoint: String = appConfigService.properties("bestbuyUSEndpoint")
-    val keywordSearch = p.contains(Keywords)
-    val page = p(Page).toInt
+    val keywordSearch = params.contains(Keywords)
+    val page = params(Page).toInt
     val pageSize = appConfigService.properties("bestbuyUSDefaultPageSize").toInt
     val apiKey = appConfigService.properties("bestbuyUSapiKey")
     val affiliateId = appConfigService.properties("bestbuyUSLinkShareId")
@@ -52,7 +55,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     if (keywordSearch) {
       val listFields = appConfigService.properties("bestbuyUSListFields")
       val path = appConfigService.properties("bestbuyUSProductSearchPath")
-      val keywords = p(Keywords)
+      val keywords = params(Keywords)
       val url = s"$endpoint/$path$keywords"
 
       val req: WSRequest = ws
@@ -73,19 +76,19 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
       val futureResult: Future[Option[BestBuySearchResponse]] = req
         .get()
         .map { response => {
-            val resp = response.json.validate[BestBuySearchResponse]
-            resp match {
-              case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
-              case e: JsError =>
-                logger.info("Errors: " + JsError.toJson(e).toString())
-                None
-            }
+          val resp = response.json.validate[BestBuySearchResponse]
+          resp match {
+            case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
+            case e: JsError =>
+              logger.info("Errors: " + JsError.toJson(e).toString())
+              None
           }
+        }
         }
 
       futureResult.map {
-       case Some(entity) => buildList(entity, pageSize)
-       case _ => None
+        case Some(entity) => buildList(entity, pageSize)
+        case _ => None
       }
 
     } else {
@@ -103,14 +106,14 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
       val futureResult: Future[Option[BestBuyTrendingResponse]] = req
         .get()
         .map { response => {
-            val resp = response.json.validate[BestBuyTrendingResponse]
-            resp match {
-              case s: JsSuccess[BestBuyTrendingResponse] => Some(s.get)
-              case e: JsError =>
-                logger.info("Errors: " + JsError.toJson(e).toString())
-                None
-            }
+          val resp = response.json.validate[BestBuyTrendingResponse]
+          resp match {
+            case s: JsSuccess[BestBuyTrendingResponse] => Some(s.get)
+            case e: JsError =>
+              logger.info("Errors: " + JsError.toJson(e).toString())
+              None
           }
+        }
         }
 
       futureResult.map {
@@ -132,34 +135,31 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     ThreadLogger.log(s"BestBuy getProductDetail $id, $idType, $source, $country")
     val idTypeBestBuy = filterIdType(idType)
 
-    if (idTypeBestBuy.isEmpty) return Future.successful(None)
-
     // try to acquire lock from request Monitor
-    if (!requestMonitor.isRequestPossible(BestBuy)) {
-      logger.info(s"Unable to acquire lock from Request Monitor")
-      return Future.successful(None)
-    }
+    if (!requestMonitor.isRequestPossible(BestBuy) || idTypeBestBuy.isEmpty) {
+      logger.info(s"Unable to acquire lock from Request Monitor or Id Type is empty")
+      Future.successful(None)
+    } else {
+      val endpoint: String = appConfigService.properties("bestbuyUSEndpoint")
+      val path = appConfigService.properties("bestbuyUSProductSearchPath")
+      val apiKey = appConfigService.properties("bestbuyUSapiKey")
+      val affiliateId = appConfigService.properties("bestbuyUSLinkShareId")
+      val timeout = appConfigService.properties("marketplaceDefaultTimeout")
+      val idTypeStr = idTypeBestBuy.get
 
-    val endpoint: String = appConfigService.properties("bestbuyUSEndpoint")
-    val path = appConfigService.properties("bestbuyUSProductSearchPath")
-    val apiKey = appConfigService.properties("bestbuyUSapiKey")
-    val affiliateId = appConfigService.properties("bestbuyUSLinkShareId")
-    val timeout = appConfigService.properties("marketplaceDefaultTimeout")
-    val idTypeStr = idTypeBestBuy.get
+      val url = s"$endpoint/$path($idTypeStr=$id)"
 
-    val url = s"$endpoint/$path($idTypeStr=$id)"
+      val req: WSRequest = ws
+        .url(url)
+        .addHttpHeaders("Accept" -> "application/json")
+        .addQueryStringParameters("format" -> "json", "apiKey" -> apiKey, "LID" -> affiliateId)
+        .withRequestTimeout(timeout.toInt.millis)
 
-    val req: WSRequest = ws
-      .url(url)
-      .addHttpHeaders("Accept" -> "application/json")
-      .addQueryStringParameters("format" -> "json", "apiKey" -> apiKey, "LID" -> affiliateId)
-      .withRequestTimeout(timeout.toInt.millis)
+      logger.info("BestBuy: " + req.uri)
 
-    logger.info("BestBuy: " + req.uri)
-
-    val futureResult: Future[Option[BestBuySearchResponse]] = req
-      .get()
-      .map { response => {
+      val futureResult: Future[Option[BestBuySearchResponse]] = req
+        .get()
+        .map { response => {
           val resp = response.json.validate[BestBuySearchResponse]
           resp match {
             case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
@@ -168,11 +168,12 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
               None
           }
         }
-      }
+        }
 
-    futureResult.map {
-      case Some(entity) => buildProductDetail(entity)
-      case _ => None
+      futureResult.map {
+        case Some(entity) => buildProductDetail(entity)
+        case _ => None
+      }
     }
   }
 
@@ -213,8 +214,11 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
   }
 
   private def buildProductDetail(item: BestBuySearchResponse): Option[OfferDetail] = {
-    if (item.products.isEmpty) return None
-    buildProductDetail(item.products.head)
+    if (item.products.isEmpty) {
+      None
+    } else {
+      buildProductDetail(item.products.head)
+    }
   }
 
   /**
@@ -257,19 +261,25 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
   private def buildList(r: BestBuySearchResponse, pageSize: Int): Option[OfferList] = {
     ThreadLogger.log("BestBuy buildList")
 
-    if (r.products.isEmpty) return None
-    val summary = new ListSummary(r.currentPage, r.totalPages, r.total)
-    val resp = new OfferList(buildListItems(r.products), summary)
-    Some(resp)
+    if (r.products.isEmpty) {
+      None
+    } else {
+      val summary = new ListSummary(r.currentPage, r.totalPages, r.total)
+      val resp = new OfferList(buildListItems(r.products), summary)
+      Some(resp)
+    }
   }
 
   private def buildList(r: BestBuyTrendingResponse): Option[OfferList] = {
     ThreadLogger.log("BestBuy build Trending")
 
-    if (r.results.isEmpty) return None
-    val summary = new ListSummary(1, 1, r.metadata.resultSet.count)
-    val resp = new OfferList(buildTrendingListItems(r.results), summary)
-    Some(resp)
+    if (r.results.isEmpty) {
+      None
+    } else {
+      val summary = new ListSummary(1, 1, r.metadata.resultSet.count)
+      val resp = new OfferList(buildTrendingListItems(r.results), summary)
+      Some(resp)
+    }
   }
 
   private def buildTrendingListItems(items: Vector[ProductSpecialOfferItem]): Vector[Offer] = {
@@ -318,11 +328,12 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
   private def buildProductId(item: ProductItem): String = {
     if (item.productId.isDefined) {
-      return item.productId.get.toString
+      item.productId.get.toString
     } else if (item.sku.isDefined) {
-      return item.sku.get.toString
+      item.sku.get.toString
+    } else {
+      ""
     }
-    ""
   }
 
   private def buildCategoryPath(path: Vector[CategoryPath]) = {

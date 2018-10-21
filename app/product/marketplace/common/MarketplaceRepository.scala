@@ -112,26 +112,24 @@ class MarketplaceRepositoryImpl @Inject()(
     // check cache
     if (appConfigService.properties("cache.enabled").toBoolean) {
       val json = cache.get(requestKey)
-      if (json.isDefined) return Future.successful {
-        Some(Json.parse(json.get).as[OfferList])
+      if (json.isDefined) Future.successful(Some(Json.parse(json.get).as[OfferList])) else Future.successful(None)
+    } else {
+      val providers = getMarketplaceProviders()
+      val futures = for (p <- providers) yield f(p, req)
+      val result = waitAll(futures)
+      val emptyList = Option(OfferList(Vector.empty, ListSummary(0, 0, 0)))
+
+      result.map { x =>
+        val list = x.foldLeft(emptyList)((r, c) => {
+          if (c.isSuccess) OfferList.merge(r, c.get) else r
+        })
+        val response = buildResponse(
+          requestKey,
+          req,
+          list
+        )
+        response
       }
-    }
-
-    val providers = getMarketplaceProviders()
-    val futures = for (p <- providers) yield f(p, req)
-    val result = waitAll(futures)
-    val emptyList = Option(OfferList(Vector.empty, ListSummary(0, 0, 0)))
-
-    result.map { x =>
-      val list = x.foldLeft(emptyList)((r, c) => {
-        if (c.isSuccess) OfferList.merge(r, c.get) else r
-      })
-      val response = buildResponse(
-        requestKey,
-        req,
-        list
-      )
-      response
     }
   }
 
@@ -149,7 +147,7 @@ class MarketplaceRepositoryImpl @Inject()(
     offerList: Option[OfferList]
   ): Option[OfferList] = {
 
-    val mapParams = ListRequest.filterParams(request)
+    val mapParams = ListRequest.filterEmptyParams(request)
     val country = ListRequest.filterCountry(mapParams)
     val keyword = mapParams.getOrElse(Name, "")
     val sortBy = request.sortColumn.getOrElse("")
@@ -295,7 +293,6 @@ class MarketplaceRepositoryImpl @Inject()(
     * @return sorted list
     */
   private def sortList(offerList: Option[OfferList], country: String, keyword: String, sortBy: String, asc: Boolean): Option[OfferList] = {
-    if (offerList.isEmpty) return None
     val list: Vector[Offer] = offerList.get.list
 
     val sorted = sortBy match {
@@ -389,24 +386,21 @@ class MarketplaceRepositoryImpl @Inject()(
   override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
     logger.info(s"Marketplace get - params:  $id, $idType, $source, $country")
     val c = if (country.isDefined && isValidCountry(country.get)) country.get else UnitedStates
-    if (isBlank(Some(id)) || !isValidMarketplaceIdType(idType) || !isValidMarketplaceProvider(c, source)) return Future.successful(None)
 
-    // check cache
-    if (appConfigService.properties("cache.enabled").toBoolean) {
-      val json = cache.get(id)
-      if (json.isDefined) return Future.successful {
-        Some(Json.parse(json.get).as[OfferDetail])
+    if (isBlank(Some(id)) || !isValidMarketplaceIdType(idType) || !isValidMarketplaceProvider(c, source)) {
+      Future.successful(None)
+    } else {
+      val json = if (appConfigService.properties("cache.enabled").toBoolean) cache.get(id) else None
+      if (json.isDefined) {
+        Future.successful(Some(Json.parse(json.get).as[OfferDetail]))
+      } else {
+        val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
+        fetchProductDetail(id, idType, source, Some(c)).map { detail =>
+          val future = fetchDetailItemsAndLastLog(detail, Upc, Some(c))
+          Await.result(future, timeout.toInt millis)
+        }
       }
     }
-
-    val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
-
-    val future = fetchProductDetail(id, idType, source, Some(c)).map { detail => fetchDetailItemsAndLastLog(detail, Upc, Some(c))
-    } recover {
-      case _: java.util.concurrent.TimeoutException => Future.successful(None)
-    }
-
-    Await.result(future, timeout.toInt millis)
   }
 
   private def isValidMarketplaceProvider(country: String, str: String): Boolean = {
@@ -475,30 +469,33 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   private def mergeResponseProductDetail(response: Option[OfferDetail], response2: Option[OfferDetail]): Option[OfferDetail] = {
-    if (response.isEmpty) return None
-    if (response2.isEmpty) return response
+    if (response.isEmpty) {
+      None
+    } else if (response2.isEmpty) {
+      response
+    } else {
+      val item1 = response.get
+      val item = response2.get
 
-    val item1 = response.get
-    val item = response2.get
-
-    // return a new merged OfferDetail obj.
-    Some(
-      OfferDetail(
-        item1.offer,
-        item1.description,
-        item1.attributes,
-        item1.productDetailItems ++ Seq(
-          new OfferDetailItem(
-            item.offer.partyName,
-            item.offer.semanticName,
-            item.offer.partyImageFileUrl,
-            item.offer.price,
-            item.offer.rating,
-            item.offer.numReviews
+      // return a new merged OfferDetail obj.
+      Some(
+        OfferDetail(
+          item1.offer,
+          item1.description,
+          item1.attributes,
+          item1.productDetailItems ++ Seq(
+            new OfferDetailItem(
+              item.offer.partyName,
+              item.offer.semanticName,
+              item.offer.partyImageFileUrl,
+              item.offer.price,
+              item.offer.rating,
+              item.offer.numReviews
+            )
           )
         )
       )
-    )
+    }
   }
 
   /**
@@ -535,20 +532,20 @@ class MarketplaceRepositoryImpl @Inject()(
     */
   private def getProductDetailItems(detail: Option[OfferDetail], idType: String, country: Option[String]): Future[Option[OfferDetail]] = {
     if (detail.isEmpty || detail.get.offer.upc.isEmpty || isBlank(detail.get.offer.upc.get)) {
-      return Future.successful(detail)
-    }
+      Future.successful(detail)
+    } else {
+      idType match {
+        case Upc =>
+          val providers = getMarketplaceProvidersByCountry(country.getOrElse(UnitedStates)).filter(!_.equals(detail.get.offer.partyName))
+          val upc = detail.get.offer.upc.get
+          val listFutures = for (provider <- providers) yield fetchProductDetail(upc, Upc, provider, country)
+          val response = waitAll(listFutures)
+          response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
 
-    idType match {
-      case Upc =>
-        val providers = getMarketplaceProvidersByCountry(country.getOrElse(UnitedStates)).filter(!_.equals(detail.get.offer.partyName))
-        val upc = detail.get.offer.upc.get
-        val listFutures = for (provider <- providers) yield fetchProductDetail(upc, Upc, provider, country)
-        val response = waitAll(listFutures)
-        response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
-
-      case _ =>
-        logger.error(s"Error - getProductDetailItems - invalid idType: $idType")
-        Future.successful(None)
+        case _ =>
+          logger.error(s"getProductDetailItems - No UPC found. IdType: $idType")
+          Future.successful(None)
+      }
     }
   }
 

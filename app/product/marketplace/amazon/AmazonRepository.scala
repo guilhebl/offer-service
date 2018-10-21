@@ -11,7 +11,6 @@ import product.marketplace.common.{MarketplaceRepository, RequestMonitor}
 import product.model._
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -36,7 +35,7 @@ class AmazonRepositoryImpl @Inject()(
 
   override def search(request: ListRequest): Future[Option[OfferList]] = {
     ThreadLogger.log(s"Amazon Search $request")
-    val params = ListRequest.filterParams(request)
+    val params = ListRequest.filterEmptyParams(request)
 
     // match param names with specific provider params
     val p = filterParamsSearch(params)
@@ -44,72 +43,69 @@ class AmazonRepositoryImpl @Inject()(
     // try to acquire lock from request Monitor
     if (!requestMonitor.isRequestPossible(Amazon)) {
       logger.info(s"Unable to acquire lock from Request Monitor")
-      return Future.successful(None)
+      Future.successful(None)
+    } else {
+      val endpoint: String = appConfigService.properties("amazonUSEndpoint")
+      val accessKeyId: String = appConfigService.properties("amazonUSaccessKeyId")
+      val secretKey: String = appConfigService.properties("amazonUSsecretKey")
+      val associateTag: String = appConfigService.properties("amazonUSassociateTag")
+      val timeout = appConfigService.properties("marketplaceDefaultTimeout")
+
+      val parameters = mutable.HashMap[String, String]()
+      parameters.put("Service", "AWSECommerceService")
+      parameters.put("Operation", "ItemSearch")
+      parameters.put("AWSAccessKeyId", accessKeyId)
+      parameters.put("AssociateTag", associateTag)
+      parameters.put("SearchIndex", "All")
+      parameters.put("ResponseGroup", "Images,ItemAttributes,Offers")
+      parameters.put("ItemPage", p(Page))
+      parameters.put("Keywords", p("Keywords"))
+      val url = helper.sign(endpoint, accessKeyId, secretKey, parameters)
+
+      logger.info("Amazon: " + url)
+
+      val futureResult = ws.url(url).withRequestTimeout(timeout.toInt.millis).get().map { response =>
+        buildList(p(Page).toInt, response.xml)
+      }
+
+      futureResult
     }
-
-    val endpoint: String = appConfigService.properties("amazonUSEndpoint")
-    val accessKeyId: String = appConfigService.properties("amazonUSaccessKeyId")
-    val secretKey: String = appConfigService.properties("amazonUSsecretKey")
-    val associateTag: String = appConfigService.properties("amazonUSassociateTag")
-    val timeout = appConfigService.properties("marketplaceDefaultTimeout")
-
-    val parameters = mutable.HashMap[String, String]()
-    parameters.put("Service", "AWSECommerceService")
-    parameters.put("Operation", "ItemSearch")
-    parameters.put("AWSAccessKeyId", accessKeyId)
-    parameters.put("AssociateTag", associateTag)
-    parameters.put("SearchIndex", "All")
-    parameters.put("ResponseGroup", "Images,ItemAttributes,Offers")
-    parameters.put("ItemPage", p(Page))
-    parameters.put("Keywords", p("Keywords"))
-    val url = helper.sign(endpoint, accessKeyId, secretKey, parameters)
-
-    logger.info("Amazon: " + url)
-
-    val futureResult = ws.url(url).withRequestTimeout(timeout.toInt.millis).get().map { response =>
-      buildList(p(Page).toInt, response.xml)
-    }
-
-    futureResult
   }
 
   override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
-    // try to acquire lock from request Monitor
-    if (!requestMonitor.isRequestPossible(Amazon)) {
-      logger.info(s"Unable to acquire lock from Request Monitor")
-      return Future.successful(None)
-    }
-
+    Logger.info(s"getProductDetail: $id, $source")
     val idTypeAmazon = filterIdType(idType)
 
-    if (idTypeAmazon.isEmpty) return Future.successful(None)
+    // try to acquire lock from request Monitor
+    if (!requestMonitor.isRequestPossible(Amazon) || idTypeAmazon.isEmpty) {
+      logger.info(s"Unable to acquire lock from Request Monitor")
+      Future.successful(None)
+    } else {
+      val endpoint: String = appConfigService.properties("amazonUSEndpoint")
+      val accessKeyId: String = appConfigService.properties("amazonUSaccessKeyId")
+      val secretKey: String = appConfigService.properties("amazonUSsecretKey")
+      val associateTag: String = appConfigService.properties("amazonUSassociateTag")
+      val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
-    val endpoint: String = appConfigService.properties("amazonUSEndpoint")
-    val accessKeyId: String = appConfigService.properties("amazonUSaccessKeyId")
-    val secretKey: String = appConfigService.properties("amazonUSsecretKey")
-    val associateTag: String = appConfigService.properties("amazonUSassociateTag")
-    val timeout = appConfigService.properties("marketplaceDefaultTimeout")
+      val parameters = mutable.HashMap[String, String]()
+      parameters.put("Service", "AWSECommerceService")
+      parameters.put("Operation", "ItemLookup")
+      parameters.put("AWSAccessKeyId", accessKeyId)
+      parameters.put("AssociateTag", associateTag)
+      parameters.put("IdType", idTypeAmazon.get)
+      parameters.put("ItemId", id)
+      parameters.put("ResponseGroup", "Images,ItemAttributes,Offers")
+      if (!idTypeAmazon.get.equals("ASIN")) {
+        parameters.put("SearchIndex", "All")
+      }
+      val url = helper.sign(endpoint, accessKeyId, secretKey, parameters)
 
-    val parameters = mutable.HashMap[String, String]()
-    parameters.put("Service", "AWSECommerceService")
-    parameters.put("Operation", "ItemLookup")
-    parameters.put("AWSAccessKeyId", accessKeyId)
-    parameters.put("AssociateTag", associateTag)
-    parameters.put("IdType", idTypeAmazon.get)
-    parameters.put("ItemId", id)
-    parameters.put("ResponseGroup", "Images,ItemAttributes,Offers")
-    if (!idTypeAmazon.get.equals("ASIN")) {
-      parameters.put("SearchIndex", "All")
+      logger.info(s"Amazon get by $idTypeAmazon: $url")
+      val futureResult = ws.url(url).withRequestTimeout(timeout.toInt.millis).get().map { response =>
+        buildProductDetail(response.xml)
+      }
+      futureResult
     }
-    val url = helper.sign(endpoint, accessKeyId, secretKey, parameters)
-
-    logger.info(s"Amazon get by $idTypeAmazon: $url")
-
-    val futureResult = ws.url(url).withRequestTimeout(timeout.toInt.millis).get().map { response =>
-      buildProductDetail(response.xml)
-    }
-
-    futureResult
   }
 
   private def filterIdType(str: String): Option[String] = {
@@ -125,42 +121,44 @@ class AmazonRepositoryImpl @Inject()(
   private def buildProductDetail(response: Elem): Option[OfferDetail] = {
     val items = response \ "Items"
     val itemNode = items \ "Item"
-    if (itemNode.isEmpty) return None
-    val item = itemNode.head
+    if (itemNode.isEmpty) {
+      None
+    } else {
+      val item = itemNode.head
+      val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Amazon) != -1
+      val itemAttrs = item \ "ItemAttributes"
+      val offerSummary = item \ "OfferSummary"
 
-    val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Amazon) != -1
-    val itemAttrs = item \ "ItemAttributes"
-    val offerSummary = item \ "OfferSummary"
-
-    val detail = new OfferDetail(
-      new Offer(
-        (item \ "ASIN").text,
-        Some((itemAttrs \ "UPC").text),
-        (itemAttrs \ "Title").text,
-        Amazon,
-        (item \ "DetailPageURL").text,
-        appConfigService.buildImgUrlExternal(Some((item \ "LargeImage" \ "URL").text), proxyRequired),
-        appConfigService.buildImgUrl(Some("amazon-logo.png")),
-        buildPrice(
-          Some((offerSummary \ "LowestNewPrice" \ "FormattedPrice").text),
-          Some((offerSummary \ "LowestUsedPrice" \ "FormattedPrice").text)
+      val detail = new OfferDetail(
+        new Offer(
+          (item \ "ASIN").text,
+          Some((itemAttrs \ "UPC").text),
+          (itemAttrs \ "Title").text,
+          Amazon,
+          (item \ "DetailPageURL").text,
+          appConfigService.buildImgUrlExternal(Some((item \ "LargeImage" \ "URL").text), proxyRequired),
+          appConfigService.buildImgUrl(Some("amazon-logo.png")),
+          buildPrice(
+            Some((offerSummary \ "LowestNewPrice" \ "FormattedPrice").text),
+            Some((offerSummary \ "LowestUsedPrice" \ "FormattedPrice").text)
+          ),
+          (itemAttrs \ "ProductGroup").text,
+          0.0f,
+          0
         ),
-        (itemAttrs \ "ProductGroup").text,
-        0.0f,
-        0
-      ),
-      buildDescription(itemAttrs \ "features"),
-      buildProductDetailAttributes(
-        itemAttrs \ "Brand",
-        itemAttrs \ "Manufacturer",
-        itemAttrs \ "HardwarePlatform",
-        itemAttrs \ "Model",
-        itemAttrs \ "Publisher"
-      ),
-      Vector.empty[OfferDetailItem]
-    )
+        buildDescription(itemAttrs \ "features"),
+        buildProductDetailAttributes(
+          itemAttrs \ "Brand",
+          itemAttrs \ "Manufacturer",
+          itemAttrs \ "HardwarePlatform",
+          itemAttrs \ "Model",
+          itemAttrs \ "Publisher"
+        ),
+        Vector.empty[OfferDetailItem]
+      )
 
-    Some(detail)
+      Some(detail)
+    }
   }
 
   private def buildProductDetailAttributes(attrs: NodeSeq*): Vector[NameValue] = {
@@ -168,9 +166,12 @@ class AmazonRepositoryImpl @Inject()(
   }
 
   private def buildDescription(node: NodeSeq): String = {
-    if (node.isEmpty) return ""
-    val textList = node.map(n => n.text)
-    textList.mkString
+    if (node.isEmpty) {
+      ""
+    } else {
+      val textList = node.map(n => n.text)
+      textList.mkString
+    }
   }
 
   /**
@@ -207,35 +208,37 @@ class AmazonRepositoryImpl @Inject()(
     ThreadLogger.log("Amazon buildList")
     val items = response \ "Items"
     val total = (items \ "TotalResults").text.toInt
-    if (total == 0) return None
+    if (total > 0) {
+      val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Amazon) != -1
+      val totalPages = (items \ "TotalPages").text.toInt
+      val summary = new ListSummary(page, totalPages, total)
 
-    val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Amazon) != -1
-    val totalPages = (items \ "TotalPages").text.toInt
-    val summary = new ListSummary(page, totalPages, total)
+      val list = (items \ "Item").map { item =>
+        val itemAttrs = item \ "ItemAttributes"
+        val offerSummary = item \ "OfferSummary"
+        new Offer(
+          (item \ "ASIN").text,
+          Some((itemAttrs \ "UPC").text),
+          (itemAttrs \ "Title").text,
+          Amazon,
+          (item \ "DetailPageURL").text,
+          appConfigService.buildImgUrlExternal(Some((item \ "LargeImage" \ "URL").text), proxyRequired),
+          appConfigService.buildImgUrl(Some("amazon-logo.png")),
+          buildPrice(
+            Some((offerSummary \ "LowestNewPrice" \ "FormattedPrice").text),
+            Some((offerSummary \ "LowestUsedPrice" \ "FormattedPrice").text)
+          ),
+          (itemAttrs \ "ProductGroup").text,
+          0.0f,
+          0
+        )
+      }
 
-    val list = (items \ "Item").map { item =>
-      val itemAttrs = item \ "ItemAttributes"
-      val offerSummary = item \ "OfferSummary"
-      new Offer(
-        (item \ "ASIN").text,
-        Some((itemAttrs \ "UPC").text),
-        (itemAttrs \ "Title").text,
-        Amazon,
-        (item \ "DetailPageURL").text,
-        appConfigService.buildImgUrlExternal(Some((item \ "LargeImage" \ "URL").text), proxyRequired),
-        appConfigService.buildImgUrl(Some("amazon-logo.png")),
-        buildPrice(
-          Some((offerSummary \ "LowestNewPrice" \ "FormattedPrice").text),
-          Some((offerSummary \ "LowestUsedPrice" \ "FormattedPrice").text)
-        ),
-        (itemAttrs \ "ProductGroup").text,
-        0.0f,
-        0
-      )
+      val resp = new OfferList(list.toVector, summary)
+      Some(resp)
+    } else {
+      None
     }
-
-    val resp = new OfferList(list.toVector, summary)
-    Some(resp)
   }
 
   private def buildPrice(price: Option[String], usedPrice: Option[String]): Double = {

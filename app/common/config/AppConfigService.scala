@@ -63,8 +63,11 @@ class AppConfigServiceImpl @Inject() extends AppConfigService {
 	 * @param url
 	 */
   def changeToHttpsUrl(url: String): String = {
-    if (url.indexOf("http://") != -1) return url.replace("http://", "https://")
-    url
+    if (url.indexOf("http://") != -1) {
+      url.replace("http://", "https://")
+    } else {
+      url
+    }
   }
 
 }

@@ -96,20 +96,20 @@ class AmazonRequestHelperImpl @Inject() extends AmazonRequestHelper {
 
   private def canonicalize(sortedParamMap : TreeMap[String, String]) : String = {
     if (sortedParamMap.isEmpty) {
-      return ""
+      ""
+    } else {
+      val buffer = new StringBuilder()
+
+      sortedParamMap.foreach(x => {
+        buffer ++= percentEncodeRfc3986(x._1)
+        buffer ++= "="
+        buffer ++= percentEncodeRfc3986(x._2)
+        buffer ++= "&"
+      })
+
+      // remove last &
+      buffer.dropRight(1).toString
     }
-
-    val buffer = new StringBuilder()
-
-    sortedParamMap.foreach(x => {
-      buffer ++= percentEncodeRfc3986(x._1)
-      buffer ++= "="
-      buffer ++= percentEncodeRfc3986(x._2)
-      buffer ++= "&"
-    })
-
-    // remove last &
-    buffer.dropRight(1).toString
   }
 
   /**

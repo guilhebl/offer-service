@@ -9,17 +9,23 @@ object IpAddressUtil {
 
   def ipv4ToLong(ip: String): Option[Long] = {
     val addrArray: Array[String] = ip.split("\\.")
-    if (addrArray.length != 4) return None
-    var num: Long = 0
-    var i: Int = 0
-    while (i < addrArray.length) {
-      val power: Int = 3 - i
-      val n = addrArray(i).toInt
-      if (n < 0 || n > 255) return None
-      num = num + ((n % 256) * Math.pow(256, power)).toLong
-      i += 1
+    if (addrArray.length != 4) {
+      None
+    } else {
+      var num: Long = 0
+      var i: Int = 0
+      while (i < addrArray.length) {
+        val power: Int = 3 - i
+        val n = addrArray(i).toInt
+        if (n < 0 || n > 255) {
+          None
+        } else {
+          num = num + ((n % 256) * Math.pow(256, power)).toLong
+          i += 1
+        }
+      }
+      Some(num)
     }
-    Some(num)
   }
 
   def longToIPv4 (ip : Long) : String = {

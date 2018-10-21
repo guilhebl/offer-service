@@ -31,49 +31,46 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
 
   override def search(request: ListRequest): Future[Option[OfferList]] = {
     ThreadLogger.log(s"$clazz Search")
-    val params = ListRequest.filterParams(request)
-
     // match param names with specific provider params
-    val p = filterParamsSearch(params)
+    val p = getVendorSpecificParams(ListRequest.filterEmptyParams(request))
 
     // try to acquire lock from request Monitor
 		if (!requestMonitor.isRequestPossible(Ebay)) {
 		    logger.info(s"Unable to acquire lock from Request Monitor")
-        return Future.successful(None)
-		}
+        Future.successful(None)
+		} else {
+      val endpoint: String = appConfigService.properties("eBayEndpoint")
+      val timeout = appConfigService.properties("marketplaceDefaultTimeout")
+      val path = appConfigService.properties("eBayProductSearchPath")
+      val pageSize = appConfigService.properties("eBayDefaultPageSize")
+      val ebaySecurityAppName = appConfigService.properties("eBaySecurityAppName")
+      val ebayDefaultDataFormat = appConfigService.properties("eBayDefaultDataFormat")
+      val ebayAffiliateNetworkId = appConfigService.properties("eBayAffiliateNetworkId")
+      val ebayAffiliateTrackingId = appConfigService.properties("eBayAffiliateTrackingId")
+      val ebayAffiliateCustomId = appConfigService.properties("eBayAffiliateCustomId")
 
-    val endpoint: String = appConfigService.properties("eBayEndpoint")
-    val timeout = appConfigService.properties("marketplaceDefaultTimeout")
-    val path = appConfigService.properties("eBayProductSearchPath")
-    val pageSize = appConfigService.properties("eBayDefaultPageSize")
-    val ebaySecurityAppName = appConfigService.properties("eBaySecurityAppName")
-    val ebayDefaultDataFormat = appConfigService.properties("eBayDefaultDataFormat")
-    val ebayAffiliateNetworkId = appConfigService.properties("eBayAffiliateNetworkId")
-    val ebayAffiliateTrackingId = appConfigService.properties("eBayAffiliateTrackingId")
-    val ebayAffiliateCustomId = appConfigService.properties("eBayAffiliateCustomId")
-    
-    val url = endpoint + '/' + path
+      val url = endpoint + '/' + path
 
-    val req: WSRequest = ws.url(url)
+      val req: WSRequest = ws.url(url)
         .addHttpHeaders("Accept" -> "application/json")
         .addQueryStringParameters(
-            "OPERATION-NAME" -> "findItemsByKeywords",
-            "SERVICE-VERSION" -> "1.0.0",
-            "SECURITY-APPNAME" -> ebaySecurityAppName,
-            "GLOBAL-ID" -> getEbayGlobalId(p(Country)),
-            "RESPONSE-DATA-FORMAT" -> ebayDefaultDataFormat,
-            "affiliate.networkId" -> ebayAffiliateNetworkId,
-            "affiliate.trackingId" -> ebayAffiliateTrackingId,
-            "affiliate.customId" -> ebayAffiliateCustomId,
-            "outputSelector" -> "PictureURLLarge", // add large picture to standard result            
-            "paginationInput.pageNumber" -> p(Page),
-            "paginationInput.entriesPerPage" -> pageSize.toString,
-            Keywords -> p(Keywords))
+          "OPERATION-NAME" -> "findItemsByKeywords",
+          "SERVICE-VERSION" -> "1.0.0",
+          "SECURITY-APPNAME" -> ebaySecurityAppName,
+          "GLOBAL-ID" -> getEbayGlobalId(p(Country)),
+          "RESPONSE-DATA-FORMAT" -> ebayDefaultDataFormat,
+          "affiliate.networkId" -> ebayAffiliateNetworkId,
+          "affiliate.trackingId" -> ebayAffiliateTrackingId,
+          "affiliate.customId" -> ebayAffiliateCustomId,
+          "outputSelector" -> "PictureURLLarge", // add large picture to standard result
+          "paginationInput.pageNumber" -> p(Page),
+          "paginationInput.entriesPerPage" -> pageSize.toString,
+          Keywords -> p(Keywords))
         .withRequestTimeout(timeout.toInt.millis)
 
-    logger.info("Ebay: " + req.uri)
+      logger.info("Ebay: " + req.uri)
 
-    val futureResult: Future[Option[EbaySearchResponse]] = req.get()
+      val futureResult: Future[Option[EbaySearchResponse]] = req.get()
         .map {
           response =>
             val resp = response.json.validate[EbaySearchResponse]
@@ -85,12 +82,13 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
             }
         }
 
-    futureResult.map {
-      case Some(entity) => buildList(entity)
-      case _ => None
+      futureResult.map {
+        case Some(entity) => buildList(entity)
+        case _ => None
+      }
     }
   }
-  
+
   private def getEbayGlobalId(country : String) = {
     country match {
       case Canada => "EBAY-ENCA"
@@ -102,66 +100,69 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     // try to acquire lock from request Monitor
     if (!requestMonitor.isRequestPossible(Ebay)) {
       logger.info(s"Unable to acquire lock from Request Monitor")
-      return Future.successful(None)
-    }
+      Future.successful(None)
+    } else {
+      val endpoint: String = appConfigService.properties("eBayEndpoint")
+      val timeout = appConfigService.properties("marketplaceDefaultTimeout")
+      val path = appConfigService.properties("eBayProductSearchPath")
+      val ebaySecurityAppName = appConfigService.properties("eBaySecurityAppName")
+      val ebayDefaultDataFormat = appConfigService.properties("eBayDefaultDataFormat")
+      val ebayAffiliateNetworkId = appConfigService.properties("eBayAffiliateNetworkId")
+      val ebayAffiliateTrackingId = appConfigService.properties("eBayAffiliateTrackingId")
+      val ebayAffiliateCustomId = appConfigService.properties("eBayAffiliateCustomId")
 
-    val endpoint: String = appConfigService.properties("eBayEndpoint")
-    val timeout = appConfigService.properties("marketplaceDefaultTimeout")
-    val path = appConfigService.properties("eBayProductSearchPath")
-    val ebaySecurityAppName = appConfigService.properties("eBaySecurityAppName")
-    val ebayDefaultDataFormat = appConfigService.properties("eBayDefaultDataFormat")
-    val ebayAffiliateNetworkId = appConfigService.properties("eBayAffiliateNetworkId")
-    val ebayAffiliateTrackingId = appConfigService.properties("eBayAffiliateTrackingId")
-    val ebayAffiliateCustomId = appConfigService.properties("eBayAffiliateCustomId")
+      val url = endpoint + '/' + path
 
-    val url = endpoint + '/' + path
+      idType match {
+        case Id | Upc =>
+          val idTypeEbay = getEbayIdType(idType)
 
-    idType match {
-      case Id | Upc =>
-        val idTypeEbay = getEbayIdType(idType)
+          // if idType is invalid return empty response
+          if (idTypeEbay.isEmpty) {
+            Future.successful(None)
+          } else {
+            val req: WSRequest = ws.url(url)
+              .addHttpHeaders("Accept" -> "application/json")
+              .addQueryStringParameters(
+                "OPERATION-NAME" -> "findItemsByProduct",
+                "SERVICE-VERSION" -> "1.0.0",
+                "SECURITY-APPNAME" -> ebaySecurityAppName,
+                "GLOBAL-ID" -> getEbayGlobalId(country.get),
+                "RESPONSE-DATA-FORMAT" -> ebayDefaultDataFormat,
+                "affiliate.networkId" -> ebayAffiliateNetworkId,
+                "affiliate.trackingId" -> ebayAffiliateTrackingId,
+                "affiliate.customId" -> ebayAffiliateCustomId,
+                "outputSelector" -> "PictureURLLarge", // add large picture to standard result
+                "productId.@type" -> idTypeEbay.get,
+                "productId" -> id,
+                "paginationInput.entriesPerPage" -> "1"
+              ).withRequestTimeout(timeout.toInt.millis)
 
-        // if idType is invalid return empty response
-        if (idTypeEbay.isEmpty) return Future.successful(None)
+            logger.info("Ebay get By " + idTypeEbay + " " + req.uri)
 
-        val req: WSRequest = ws.url(url)
-          .addHttpHeaders("Accept" -> "application/json")
-          .addQueryStringParameters(
-            "OPERATION-NAME" -> "findItemsByProduct",
-            "SERVICE-VERSION" -> "1.0.0",
-            "SECURITY-APPNAME" -> ebaySecurityAppName,
-            "GLOBAL-ID" -> getEbayGlobalId(country.get),
-            "RESPONSE-DATA-FORMAT" -> ebayDefaultDataFormat,
-            "affiliate.networkId" -> ebayAffiliateNetworkId,
-            "affiliate.trackingId" -> ebayAffiliateTrackingId,
-            "affiliate.customId" -> ebayAffiliateCustomId,
-            "outputSelector" -> "PictureURLLarge", // add large picture to standard result
-            "productId.@type" -> idTypeEbay.get,
-            "productId" -> id,
-            "paginationInput.entriesPerPage" -> "1"
-          ).withRequestTimeout(timeout.toInt.millis)
-
-        logger.info("Ebay get By " + idTypeEbay + " " + req.uri)
-
-        val futureResult: Future[Option[EbayProductDetailResponse]] = req.get()
-          .map {
-            response => {
-              val resp = response.json.validate[EbayProductDetailResponse]
-              resp match {
-                case s: JsSuccess[EbayProductDetailResponse] => Some(s.get)
-                case e: JsError =>
-                  logger.info("Errors: " + JsError.toJson(e).toString())
-                  None
+            val futureResult: Future[Option[EbayProductDetailResponse]] = req.get()
+              .map {
+                response => {
+                  val resp = response.json.validate[EbayProductDetailResponse]
+                  resp match {
+                    case s: JsSuccess[EbayProductDetailResponse] => Some(s.get)
+                    case e: JsError =>
+                      logger.info("Errors: " + JsError.toJson(e).toString())
+                      None
+                  }
+                }
               }
+
+            futureResult.map {
+              case Some(entity) => buildProductDetail(entity)
+              case _ => None
             }
           }
 
-        futureResult.map {
-          case Some(entity) => buildProductDetail(entity)
-          case _ => None
-        }
-
-      case _ => Future.successful(None)
+        case _ => Future.successful(None)
+      }
     }
+
   }
 
   private def getEbayIdType(idType : String): Option[String] = {
@@ -171,8 +172,8 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
       case _ => None
     }
   }
-  
-  private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
+
+  private def getVendorSpecificParams(params: Map[String, String]): Map[String, String] = {
     val p = scala.collection.mutable.Map[String,String]()
 
     // get search keyword phrase
@@ -262,8 +263,11 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
     }
 
     private def buildProductDetail(item : EbayProductDetailResponse): Option[OfferDetail] = {
-      if (item.findItemsByProductResponse.head.searchResult.isEmpty) return None
-      buildProductDetail(item.findItemsByProductResponse.head.searchResult.get.head.item.head)
+      if (item.findItemsByProductResponse.head.searchResult.isEmpty) {
+        None
+      } else {
+        buildProductDetail(item.findItemsByProductResponse.head.searchResult.get.head.item.head)
+      }
     }
 
 }

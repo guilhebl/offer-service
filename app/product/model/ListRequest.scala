@@ -54,7 +54,7 @@ object ListRequest {
     * @param req params
     * @return
     */
-  def filterParams(req: ListRequest): Map[String, String] = {
+  def filterEmptyParams(req: ListRequest): Map[String, String] = {
     req.searchColumns.filter(_.value.nonEmpty).map(x => (x.name, x.value)).toMap
   }
 
@@ -68,7 +68,7 @@ object ListRequest {
   }
 
   def filterCountry(req: ListRequest): String = {
-    val params = filterParams(req)
+    val params = filterEmptyParams(req)
     filterCountry(params)
   }
 

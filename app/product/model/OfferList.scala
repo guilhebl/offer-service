@@ -33,20 +33,25 @@ object OfferList {
     * @return
     */
   def merge(acc: Option[OfferList], item: Option[OfferList]): Option[OfferList] = {
-    if (acc.isEmpty) return None
-    if (item.isEmpty) return acc
+    if (acc.isEmpty) {
+      None
+    }
+    else if (item.isEmpty) {
+      acc
+    } else {
+      val page = if (item.get.summary.page > acc.get.summary.page) item.get.summary.page else acc.get.summary.page
 
-    val page = if (item.get.summary.page > acc.get.summary.page) item.get.summary.page else acc.get.summary.page
-
-    Some(
-      new OfferList(
-        acc.get.list ++ item.get.list,
-        new ListSummary(
-          page,
-          item.get.summary.pageCount,
-          acc.get.summary.totalCount + item.get.summary.totalCount
+      Some(
+        new OfferList(
+          acc.get.list ++ item.get.list,
+          new ListSummary(
+            page,
+            item.get.summary.pageCount,
+            acc.get.summary.totalCount + item.get.summary.totalCount
+          )
         )
       )
-    )
+    }
   }
+
 }

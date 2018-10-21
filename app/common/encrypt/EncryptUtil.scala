@@ -191,7 +191,7 @@ object EncryptUtil {
 
   def pkcs5Pad(input: Array[Byte], size: Int = 16): Array[Byte] = {
     val padByte: Int = size - (input.length % size)
-    return input ++ Array.fill[Byte](padByte)(padByte.toByte)
+    input ++ Array.fill[Byte](padByte)(padByte.toByte)
   }
 
   def pkcs5Unpad(input: Array[Byte]): Array[Byte] = {
