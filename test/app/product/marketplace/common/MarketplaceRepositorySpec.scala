@@ -298,18 +298,18 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
   "getProductDetail" should {
     "be valid and not empty and fetch other competitors prices when Upc is present and there are results" in {
       val bestbuyMock = mock[BestBuyRepository]
-      when(bestbuyMock.getProductDetail("1", Id, BestBuy, Some(UnitedStates))) thenReturn {
+      when(bestbuyMock.getProductDetail("1", Id, BestBuy)) thenReturn {
         Future.successful(Some(getProductDetailNoItems))
       }
 
       val walmartMock = mock[WalmartRepository]
-      when(walmartMock.getProductDetail("upc1", Upc, Walmart, Some(UnitedStates))) thenReturn Future.successful(Some(getProductDetailNoItemsParty2))
+      when(walmartMock.getProductDetail("upc1", Upc, Walmart)) thenReturn Future.successful(Some(getProductDetailNoItemsParty2))
 
       val ebayMock = mock[EbayRepository]
-      when(ebayMock.getProductDetail("upc1", Upc, Ebay, Some(UnitedStates))) thenReturn Future.successful(Some(getProductDetailNoItemsParty2))
+      when(ebayMock.getProductDetail("upc1", Upc, Ebay)) thenReturn Future.successful(Some(getProductDetailNoItemsParty2))
 
       val amazonMock = mock[AmazonRepository]
-      when(amazonMock.getProductDetail("upc1", Upc, Amazon, Some(UnitedStates))) thenReturn Future.successful(Some(getProductDetailNoItemsParty2))
+      when(amazonMock.getProductDetail("upc1", Upc, Amazon)) thenReturn Future.successful(Some(getProductDetailNoItemsParty2))
 
       val repositoryDispatcher = getMockExecutionContext
 
@@ -322,7 +322,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
 
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock, redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("1", Id, BestBuy, None)
+      val response = service.getProductDetail("1", Id, BestBuy)
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
@@ -351,19 +351,18 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
           detailItem0.rating mustBe 3.1f
 
           // verify 1 call made to BestBuy
-          verify(bestbuyMock, times(1)).getProductDetail("1", Id, BestBuy, Some(UnitedStates))
+          verify(bestbuyMock, times(1)).getProductDetail("1", Id, BestBuy)
 
           // verify other competitors called since UPC is present
-          verify(walmartMock, times(1)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(1)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(1)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(walmartMock, times(1)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(1)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(1)).getProductDetail(anyString, anyString, anyString)
       }
     }
 
     "be valid and not empty and not fetch other competitors prices when Upc is not present and there are results" in {
       val bestbuyMock = mock[BestBuyRepository]
-      when(bestbuyMock.getProductDetail("1", Id, BestBuy, Some(UnitedStates))) thenReturn Future.successful(Some(getProductDetailNoItemsNoUpc))
-      // id: String, idType: String, source: String, country: Option[String]
+      when(bestbuyMock.getProductDetail("1", Id, BestBuy)) thenReturn Future.successful(Some(getProductDetailNoItemsNoUpc))
 
       val walmartMock = mock[WalmartRepository]
       val ebayMock = mock[EbayRepository]
@@ -379,7 +378,7 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
 
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock, redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("1", Id, BestBuy, None)
+      val response = service.getProductDetail("1", Id, BestBuy)
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
@@ -403,18 +402,18 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
           attr0.value mustBe "Radeon Pro 455"
 
           // verify 1 call made to BestBuy
-          verify(bestbuyMock, times(1)).getProductDetail("1", Id, BestBuy, Some(UnitedStates))
+          verify(bestbuyMock, times(1)).getProductDetail("1", Id, BestBuy)
 
           // verify other competitors not called since no UPC is present
-          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString)
       }
     }
 
     "be empty when there are no results" in {
       val bestbuyMock = mock[BestBuyRepository]
-      when(bestbuyMock.getProductDetail("1", Id, BestBuy, Some(UnitedStates))) thenReturn Future.successful(None)
+      when(bestbuyMock.getProductDetail("1", Id, BestBuy)) thenReturn Future.successful(None)
 
       val walmartMock = mock[WalmartRepository]
       val ebayMock = mock[EbayRepository]
@@ -431,19 +430,19 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock,
         redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("1", Id, BestBuy, None)
+      val response = service.getProductDetail("1", Id, BestBuy)
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
           r mustBe None
 
           // verify 1 call made to BestBuy
-          verify(bestbuyMock, times(1)).getProductDetail("1", Id, BestBuy, Some(UnitedStates))
+          verify(bestbuyMock, times(1)).getProductDetail("1", Id, BestBuy)
 
           // verify other competitors not called
-          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString)
       }
     }
 
@@ -462,17 +461,17 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock,
         mongoRepositoryMock, redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("", Id, BestBuy, None)
+      val response = service.getProductDetail("", Id, BestBuy)
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
           r mustBe None
 
           // verify other competitors not called
-          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString)
       }
     }
 
@@ -491,17 +490,17 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock,
         redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("1", "", BestBuy, None)
+      val response = service.getProductDetail("1", "", BestBuy)
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
           r mustBe None
 
           // verify external sources not called
-          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString)
       }
     }
 
@@ -520,17 +519,17 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock, ebayMock,
         amazonMock, mongoRepositoryMock, redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("1", Id, "", None)
+      val response = service.getProductDetail("1", Id, "")
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
           r mustBe None
 
           // verify external sources not called
-          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString)
       }
     }
 
@@ -549,17 +548,17 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock, bestbuyMock,
         ebayMock, amazonMock, mongoRepositoryMock, redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("1", "XYZ", BestBuy, None)
+      val response = service.getProductDetail("1", "XYZ", BestBuy)
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
           r mustBe None
 
           // verify external sources not called
-          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString)
       }
     }
 
@@ -578,17 +577,17 @@ class MarketplaceRepositorySpec extends PlaySpec with MockitoSugar with ScalaFut
       val service = new MarketplaceRepositoryImpl(appConfigMock, walmartMock,
         bestbuyMock, ebayMock, amazonMock, mongoRepositoryMock, redisCacheServiceMock)(repositoryDispatcher)
 
-      val response = service.getProductDetail("1", Id, "XYZ", None)
+      val response = service.getProductDetail("1", Id, "XYZ")
 
       whenReady(response, timeout(defaultTestAsyncAwaitTimeout seconds), interval(defaultTestAsyncInterval millis)) {
         r: Option[OfferDetail] =>
           r mustBe None
 
           // verify external sources not called
-          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
-          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString, any[Option[String]])
+          verify(bestbuyMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(walmartMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(ebayMock, times(0)).getProductDetail(anyString, anyString, anyString)
+          verify(amazonMock, times(0)).getProductDetail(anyString, anyString, anyString)
       }
     }
   }

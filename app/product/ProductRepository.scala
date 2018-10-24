@@ -13,7 +13,7 @@ import scala.concurrent.Future
   */
 trait ProductRepository {
   def search(listRequest : ListRequest)(implicit mc: MarkerContext): Future[Option[OfferList]]
-  def get(id : String, idType : String, source : String, country : Option[String])(implicit mc: MarkerContext): Future[Option[OfferDetail]]
+  def get(id : String, idType : String, source : String)(implicit mc: MarkerContext): Future[Option[OfferDetail]]
 }
 
 /**
@@ -32,7 +32,7 @@ class ProductRepositoryImpl @Inject()(marketplaceRepository: MarketplaceReposito
     marketplaceRepository.search(listRequest)
   }
 
-  override def get(id : String, idType : String, source : String, country : Option[String])(implicit mc: MarkerContext): Future[Option[OfferDetail]] = {
-    marketplaceRepository.getProductDetail(id, idType, source, country)
+  override def get(id : String, idType : String, source : String)(implicit mc: MarkerContext): Future[Option[OfferDetail]] = {
+    marketplaceRepository.getProductDetail(id, idType, source)
   }
 }

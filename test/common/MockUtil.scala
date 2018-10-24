@@ -12,15 +12,6 @@ object MockBaseUtil {
 
   val MockFilesPath = "test/resources/mock/product"
   val MockMarketplaceFilesPath = s"$MockFilesPath/marketplace"
-//  private val actorSystem: ActorSystem = actor.ActorSystem("unit-testing")
-//  implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-//  val bodyParser: PlayBodyParsers = PlayBodyParsers()
-//  val actionBuilder: DefaultActionBuilder = DefaultActionBuilder(bodyParser.anyContent)
-//
-//  sys addShutdownHook {
-//    materializer.shutdown()
-//    Await.result(actorSystem.terminate(), Duration.Inf)
-//  }
 
   /* MOCK data */
   private val userDir = System.getProperty("user.dir")

@@ -35,44 +35,47 @@ class AmazonRepositoryImpl @Inject()(
 
   override def search(request: ListRequest): Future[Option[OfferList]] = {
     ThreadLogger.log(s"Amazon Search $request")
-    val params = ListRequest.filterEmptyParams(request)
 
     // match param names with specific provider params
-    val p = filterParamsSearch(params)
+    val params = filterParamsSearch(ListRequest.filterEmptyParams(request))
 
     // try to acquire lock from request Monitor
     if (!requestMonitor.isRequestPossible(Amazon)) {
       logger.info(s"Unable to acquire lock from Request Monitor")
       Future.successful(None)
     } else {
-      val endpoint: String = appConfigService.properties("amazonUSEndpoint")
-      val accessKeyId: String = appConfigService.properties("amazonUSaccessKeyId")
-      val secretKey: String = appConfigService.properties("amazonUSsecretKey")
-      val associateTag: String = appConfigService.properties("amazonUSassociateTag")
-      val timeout = appConfigService.properties("marketplaceDefaultTimeout")
-
-      val parameters = mutable.HashMap[String, String]()
-      parameters.put("Service", "AWSECommerceService")
-      parameters.put("Operation", "ItemSearch")
-      parameters.put("AWSAccessKeyId", accessKeyId)
-      parameters.put("AssociateTag", associateTag)
-      parameters.put("SearchIndex", "All")
-      parameters.put("ResponseGroup", "Images,ItemAttributes,Offers")
-      parameters.put("ItemPage", p(Page))
-      parameters.put("Keywords", p("Keywords"))
-      val url = helper.sign(endpoint, accessKeyId, secretKey, parameters)
-
-      logger.info("Amazon: " + url)
-
-      val futureResult = ws.url(url).withRequestTimeout(timeout.toInt.millis).get().map { response =>
-        buildList(p(Page).toInt, response.xml)
-      }
-
-      futureResult
+      search(params)
     }
   }
 
-  override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
+  private def search(params: Map[String, String]) = {
+    val endpoint: String = appConfigService.properties("amazonUSEndpoint")
+    val accessKeyId: String = appConfigService.properties("amazonUSaccessKeyId")
+    val secretKey: String = appConfigService.properties("amazonUSsecretKey")
+    val associateTag: String = appConfigService.properties("amazonUSassociateTag")
+    val timeout = appConfigService.properties("marketplaceDefaultTimeout")
+
+    val parameters = mutable.HashMap[String, String]()
+    parameters.put("Service", "AWSECommerceService")
+    parameters.put("Operation", "ItemSearch")
+    parameters.put("AWSAccessKeyId", accessKeyId)
+    parameters.put("AssociateTag", associateTag)
+    parameters.put("SearchIndex", "All")
+    parameters.put("ResponseGroup", "Images,ItemAttributes,Offers")
+    parameters.put("ItemPage", params(Page))
+    parameters.put("Keywords", params("Keywords"))
+    val url = helper.sign(endpoint, accessKeyId, secretKey, parameters)
+
+    logger.info("Amazon: " + url)
+
+    val futureResult = ws.url(url).withRequestTimeout(timeout.toInt.millis).get().map { response =>
+      buildList(params(Page).toInt, response.xml)
+    }
+
+    futureResult
+  }
+
+  override def getProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
     Logger.info(s"getProductDetail: $id, $source")
     val idTypeAmazon = filterIdType(idType)
 

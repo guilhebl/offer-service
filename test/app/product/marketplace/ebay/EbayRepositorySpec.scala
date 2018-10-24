@@ -153,7 +153,7 @@ class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("62923188", Id, Ebay, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("62923188", Id, Ebay)).get
 
     result.offer.id shouldEqual "62923188"
     result.offer.upc shouldEqual None
@@ -187,7 +187,7 @@ class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("0883974187416", Upc, Ebay, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("0883974187416", Upc, Ebay)).get
 
     result.offer.id shouldEqual "129872399"
     result.offer.upc shouldEqual None
@@ -219,7 +219,7 @@ class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("abcxyz", Id, Ebay, Some(UnitedStates)))
+    val result = await(service.getProductDetail("abcxyz", Id, Ebay))
     result shouldBe None
   }
 
@@ -240,7 +240,7 @@ class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("62923188", "XYZ", Ebay, Some(UnitedStates)))
+    val result = await(service.getProductDetail("62923188", "XYZ", Ebay))
     result shouldBe None
   }
 
@@ -261,7 +261,7 @@ class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("32328", Id, Ebay, Some(UnitedStates)))
+    val result = await(service.getProductDetail("32328", Id, Ebay))
     result shouldBe None
   }
 
@@ -282,7 +282,7 @@ class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("088374187416", Upc, Ebay, Some(UnitedStates)))
+    val result = await(service.getProductDetail("088374187416", Upc, Ebay))
     result shouldBe None
   }
 
@@ -301,7 +301,7 @@ class EbayRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new EbayRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("62923188", Id, Ebay, Some(UnitedStates)))
+    val result = await(service.getProductDetail("62923188", Id, Ebay))
     result shouldBe None
   }
 }

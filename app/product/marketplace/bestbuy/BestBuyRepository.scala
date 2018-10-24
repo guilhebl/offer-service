@@ -131,8 +131,8 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     }
   }
 
-  override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
-    ThreadLogger.log(s"BestBuy getProductDetail $id, $idType, $source, $country")
+  override def getProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
+    ThreadLogger.log(s"BestBuy getProductDetail $id, $idType, $source")
     val idTypeBestBuy = filterIdType(idType)
 
     // try to acquire lock from request Monitor

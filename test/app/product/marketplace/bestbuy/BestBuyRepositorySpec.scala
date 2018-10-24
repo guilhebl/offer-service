@@ -168,7 +168,7 @@ class BestBuyRepositorySpec extends BaseFunSuiteDomainTest {
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("5529006", Id, BestBuy, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("5529006", Id, BestBuy)).get
 
     validateProductDetail(result)
   }
@@ -190,7 +190,7 @@ class BestBuyRepositorySpec extends BaseFunSuiteDomainTest {
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("849803052423", Upc, BestBuy, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("849803052423", Upc, BestBuy)).get
 
     validateProductDetail(result)
   }
@@ -210,7 +210,7 @@ class BestBuyRepositorySpec extends BaseFunSuiteDomainTest {
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("123456", Id, BestBuy, Some(UnitedStates)))
+    val result = await(service.getProductDetail("123456", Id, BestBuy))
     result shouldBe None
   }
 
@@ -229,7 +229,7 @@ class BestBuyRepositorySpec extends BaseFunSuiteDomainTest {
 
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("123456", Upc, BestBuy, Some(UnitedStates)))
+    val result = await(service.getProductDetail("123456", Upc, BestBuy))
     result shouldBe None
   }
 
@@ -247,7 +247,7 @@ class BestBuyRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("5529006", "XYZ", BestBuy, Some(UnitedStates)))
+    val result = await(service.getProductDetail("5529006", "XYZ", BestBuy))
     result shouldBe None
   }
 
@@ -266,7 +266,7 @@ class BestBuyRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new BestBuyRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("5529006", Id, BestBuy, Some(UnitedStates)))
+    val result = await(service.getProductDetail("5529006", Id, BestBuy))
     result shouldBe None
   }
 }

@@ -35,7 +35,7 @@ import scala.language.postfixOps
 trait MarketplaceRepository extends BaseDomainRepository {
   def search(req: ListRequest): Future[Option[OfferList]]
   def searchAll(req: ListRequest): Future[Option[OfferList]]
-  def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]]
+  def getProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]]
 
   /**
     * Base algorithm for recursive searching
@@ -383,11 +383,9 @@ class MarketplaceRepositoryImpl @Inject()(
     sortedOfferList
   }
 
-  override def getProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
-    logger.info(s"Marketplace get - params:  $id, $idType, $source, $country")
-    val c = if (country.isDefined && isValidCountry(country.get)) country.get else UnitedStates
-
-    if (isBlank(Some(id)) || !isValidMarketplaceIdType(idType) || !isValidMarketplaceProvider(c, source)) {
+  override def getProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
+    logger.info(s"Marketplace get - params:  $id, $idType, $source")
+    if (isBlank(Some(id)) || !isValidMarketplaceIdType(idType) || !isValidMarketplaceProvider(source)) {
       Future.successful(None)
     } else {
       val json = if (appConfigService.properties("cache.enabled").toBoolean) cache.get(id) else None
@@ -395,24 +393,23 @@ class MarketplaceRepositoryImpl @Inject()(
         Future.successful(Some(Json.parse(json.get).as[OfferDetail]))
       } else {
         val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
-        fetchProductDetail(id, idType, source, Some(c)).map { detail =>
-          val future = fetchDetailItemsAndLastLog(detail, Upc, Some(c))
-          Await.result(future, timeout.toInt millis)
+
+        fetchProductDetail(id, idType, source).map { detail =>
+          Await.result(fetchDetailItemsAndLastLog(detail, Upc), timeout.toInt millis)
         }
       }
     }
   }
 
-  private def isValidMarketplaceProvider(country: String, str: String): Boolean = {
-    getMarketplaceProvidersByCountry(country).contains(str)
-  }
+  private def isValidMarketplaceProvider(str: String): Boolean = isValidMarketplaceProvider(UnitedStates, str)
+  private def isValidMarketplaceProvider(country: String, str: String): Boolean = getMarketplaceProvidersByCountry(country).contains(str)
 
-  private def fetchProductDetail(id: String, idType: String, source: String, country: Option[String]): Future[Option[OfferDetail]] = {
+  private def fetchProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
     val future: Future[Option[OfferDetail]] = source match {
-      case Walmart => walmartRepository.getProductDetail(id, idType, source, country)
-      case BestBuy => bestbuyRepository.getProductDetail(id, idType, source, country)
-      case Ebay => ebayRepository.getProductDetail(id, idType, source, country)
-      case Amazon => amazonRepository.getProductDetail(id, idType, source, country)
+      case Walmart => walmartRepository.getProductDetail(id, idType, source)
+      case BestBuy => bestbuyRepository.getProductDetail(id, idType, source)
+      case Ebay => ebayRepository.getProductDetail(id, idType, source)
+      case Amazon => amazonRepository.getProductDetail(id, idType, source)
       case _ => Future.successful(None)
     }
     future
@@ -511,11 +508,10 @@ class MarketplaceRepositoryImpl @Inject()(
     */
   private def fetchDetailItemsAndLastLog(
     detail: Option[OfferDetail],
-    idType: String,
-    country: Option[String]
+    idType: String
   ): Future[Option[OfferDetail]] = {
 
-    val detailWithItems = getProductDetailItems(detail, idType, country)
+    val detailWithItems = getProductDetailItems(detail, idType)
 
     detailWithItems.map { x =>
       if (x.isDefined && x.get.offer.upc.isDefined) {
@@ -530,15 +526,15 @@ class MarketplaceRepositoryImpl @Inject()(
   /**
     * fetch product detail items from sources different than source (competitors other than original product source)
     */
-  private def getProductDetailItems(detail: Option[OfferDetail], idType: String, country: Option[String]): Future[Option[OfferDetail]] = {
+  private def getProductDetailItems(detail: Option[OfferDetail], idType: String): Future[Option[OfferDetail]] = {
     if (detail.isEmpty || detail.get.offer.upc.isEmpty || isBlank(detail.get.offer.upc.get)) {
       Future.successful(detail)
     } else {
       idType match {
         case Upc =>
-          val providers = getMarketplaceProvidersByCountry(country.getOrElse(UnitedStates)).filter(!_.equals(detail.get.offer.partyName))
+          val providers = getMarketplaceProviders().filter(!_.equals(detail.get.offer.partyName))
           val upc = detail.get.offer.upc.get
-          val listFutures = for (provider <- providers) yield fetchProductDetail(upc, Upc, provider, country)
+          val listFutures = for (provider <- providers) yield fetchProductDetail(upc, Upc, provider)
           val response = waitAll(listFutures)
           response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
 

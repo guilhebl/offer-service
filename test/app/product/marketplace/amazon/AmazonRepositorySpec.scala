@@ -183,7 +183,7 @@ class AmazonRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("B01GW8XJVU", Id, Amazon, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("B01GW8XJVU", Id, Amazon)).get
     validateProductDetail(result, "B01GW8XJVU", 25.0)
   }
 
@@ -206,7 +206,7 @@ class AmazonRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("XYZ12345678", Id, Amazon, Some(UnitedStates)))
+    val result = await(service.getProductDetail("XYZ12345678", Id, Amazon))
 
     result shouldBe None
   }
@@ -232,7 +232,7 @@ class AmazonRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("093155171251", Upc, Amazon, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("093155171251", Upc, Amazon)).get
 
     validateProductDetail(result, "B01GW8XJVU", 28.99)
   }
@@ -256,7 +256,7 @@ class AmazonRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("23456789251", Upc, Amazon, Some(UnitedStates)))
+    val result = await(service.getProductDetail("23456789251", Upc, Amazon))
 
     result shouldBe None
   }
@@ -278,7 +278,7 @@ class AmazonRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("prod123456", "XYZ", Amazon, Some(UnitedStates)))
+    val result = await(service.getProductDetail("prod123456", "XYZ", Amazon))
 
     result shouldBe None
   }
@@ -300,7 +300,7 @@ class AmazonRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new AmazonRepositoryImpl(ws, appConfigMock, requestMonitorMock, amazonRequestHelperMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("prod123456", Id, Amazon, Some(UnitedStates)))
+    val result = await(service.getProductDetail("prod123456", Id, Amazon))
 
     result shouldBe None
   }

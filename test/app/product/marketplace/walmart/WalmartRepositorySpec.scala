@@ -170,7 +170,7 @@ class WalmartRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("55760264", Id, Walmart, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("55760264", Id, Walmart)).get
 
     validateProductDetail(result)
   }
@@ -192,7 +192,7 @@ class WalmartRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("12345", Id, Walmart, Some(UnitedStates)))
+    val result = await(service.getProductDetail("12345", Id, Walmart))
     result shouldBe None
   }
 
@@ -215,7 +215,7 @@ class WalmartRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("065857174434", Upc, Walmart, Some(UnitedStates))).get
+    val result = await(service.getProductDetail("065857174434", Upc, Walmart)).get
 
     validateProductDetail(result)
   }
@@ -237,7 +237,7 @@ class WalmartRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("12345", Upc, Walmart, Some(UnitedStates)))
+    val result = await(service.getProductDetail("12345", Upc, Walmart))
     result shouldBe None
   }
 
@@ -255,7 +255,7 @@ class WalmartRepositorySpec extends BaseFunSuiteDomainTest {
     val repositoryDispatcher = getMockWorkerExecutionContext
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
-    val result = await(service.getProductDetail("55760264", "XYZ", Walmart, Some(UnitedStates)))
+    val result = await(service.getProductDetail("55760264", "XYZ", Walmart))
 
     result shouldBe None
   }
@@ -275,7 +275,7 @@ class WalmartRepositorySpec extends BaseFunSuiteDomainTest {
 
     val service = new WalmartRepositoryImpl(ws, appConfigMock, requestMonitorMock)(repositoryDispatcher)
 
-    val result = await(service.getProductDetail("55760264", Id, Walmart, Some(UnitedStates)))
+    val result = await(service.getProductDetail("55760264", Id, Walmart))
     result shouldBe None
   }
 }

@@ -19,13 +19,13 @@ class ProductRouter @Inject()(controller: ProductController) extends SimpleRoute
 
   override def routes: Routes = {
     case POST(p"/") =>
-      controller.search
+      controller.search()
 
     case GET(p"/" ? q"q=$query") =>
       controller.searchOffers(query)
 
-    case GET(p"/$id" ? q"idType=$idType" & q"source=$source" & q_o"country=$country") =>
-      controller.get(id, idType, source, country)
+    case GET(p"/$id" ? q"idType=$idType" & q"source=$source") =>
+      controller.get(id, idType, source)
   }
 
 }
