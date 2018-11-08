@@ -3,11 +3,12 @@ package product.marketplace.amazon
 import common.config.AppConfigService
 import common.executor.WorkerDispatcherContext
 import common.log.ThreadLogger
+import common.monitor.RequestMonitor
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.ws._
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.{MarketplaceRepository, RequestMonitor}
+import product.marketplace.common.MarketplaceRepository
 import product.model._
 
 import scala.collection.mutable

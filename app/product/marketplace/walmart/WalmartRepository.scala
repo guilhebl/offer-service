@@ -3,13 +3,14 @@ package product.marketplace.walmart
 import common.config.AppConfigService
 import common.executor.WorkerDispatcherContext
 import common.log.ThreadLogger
+import common.monitor.RequestMonitor
 import common.util.RegexUtil._
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.{MarketplaceRepository, RequestMonitor}
+import product.marketplace.common.MarketplaceRepository
 import product.marketplace.walmart.model.{WalmartSearchBaseResponse, WalmartSearchItem, WalmartSearchResponse, WalmartTrendingSearchResponse}
 import product.model._
 

@@ -3,6 +3,7 @@ import common.cache.{RedisCacheService, RedisCacheServiceImpl}
 import common.config.{AppConfigService, AppConfigServiceImpl}
 import common.db.{MongoDbService, MongoDbServiceImpl}
 import common.email.{EmailService, EmailServiceImpl}
+import common.monitor.{RequestMonitor, RequestMonitorImpl, RequestMonitorRateLimiterImpl}
 import common.scheduler.EmailTask
 import geo.{GeolocationRepository, GeolocationRepositoryImpl}
 import javax.inject._
@@ -11,7 +12,7 @@ import play.api.libs.concurrent.AkkaGuiceSupport
 import play.api.{Configuration, Environment}
 import product.marketplace.amazon.{AmazonRepository, AmazonRepositoryImpl, AmazonRequestHelper, AmazonRequestHelperImpl}
 import product.marketplace.bestbuy.{BestBuyRepository, BestBuyRepositoryImpl}
-import product.marketplace.common.{MarketplaceRepository, MarketplaceRepositoryImpl, RequestMonitor, RequestMonitorImpl}
+import product.marketplace.common.{MarketplaceRepository, MarketplaceRepositoryImpl}
 import product.marketplace.ebay.{EbayRepository, EbayRepositoryImpl}
 import product.marketplace.walmart.{WalmartRepository, WalmartRepositoryImpl}
 import product.{ProductRepository, ProductRepositoryImpl}

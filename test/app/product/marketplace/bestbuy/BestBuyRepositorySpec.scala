@@ -3,6 +3,7 @@ package app.product.marketplace.bestbuy
 import common.BaseFunSuiteDomainTest
 import common.MockBaseUtil._
 import common.config.AppConfigService
+import common.monitor.RequestMonitor
 import mockws.MockWS
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
@@ -13,7 +14,6 @@ import play.api.mvc.Results._
 import play.api.test.Helpers._
 import product.marketplace.bestbuy.BestBuyRepositoryImpl
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.RequestMonitor
 import product.model.{ListRequest, OfferDetail}
 
 import scala.io.Source

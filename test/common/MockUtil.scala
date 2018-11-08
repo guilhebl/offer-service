@@ -21,6 +21,7 @@ object MockBaseUtil {
   private val offerDetailNoItemsNoUpc = Json.parse(Source.fromFile(s"$MockFilesPath/sample_offer_detail_no_upc_no_items.json").getLines.mkString).as[OfferDetail]
   private val offerDetailNoItemsParty2 = Json.parse(Source.fromFile(s"$MockFilesPath/sample_offer_detail_no_items_party2.json").getLines.mkString).as[OfferDetail]
   private val appConfigProps= readProperties()
+  private val appConfigPropsRequestMonitorSpec = readPropertiesRequestMonitorSpec()
 
   private def readProperties(): Map[String, String] = {
     import java.io.FileInputStream
@@ -33,6 +34,18 @@ object MockBaseUtil {
     prop.asScala.toMap
   }
 
+  /**
+    * Used for testing Request Monitor
+    * @return overridden params
+    */
+  private def readPropertiesRequestMonitorSpec(): Map[String, String] = {
+    val props = readProperties() +
+      ("walmartUSMaxCapacity" -> "5") +
+      ("walmartUSRequestMaxTries" -> "10") +
+      ("walmartUSRequestWaitInterval" -> "200")
+    props
+  }
+
   val defaultTestAsyncAwaitTimeout = 1
   val defaultTestAsyncInterval= 500
 
@@ -42,6 +55,7 @@ object MockBaseUtil {
   def getProductDetailNoItemsNoUpc = offerDetailNoItemsNoUpc
   def getProductDetailNoItemsParty2 = offerDetailNoItemsParty2
   def testConfigProperties = appConfigProps
+  def testConfigPropertiesRequestMonitor: Map[String, String] = appConfigPropsRequestMonitorSpec
 
   def getMockExecutionContext : RepositoryDispatcherContext = {
     val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.global
