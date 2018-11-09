@@ -17,7 +17,7 @@ import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Sorts.descending
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Writes}
 import product.marketplace.amazon.AmazonRepository
 import product.marketplace.bestbuy.BestBuyRepository
 import product.marketplace.common.MarketplaceConstants._
@@ -120,15 +120,10 @@ class MarketplaceRepositoryImpl @Inject()(
       val emptyList = Option(OfferList(Vector.empty, ListSummary(0, 0, 0)))
 
       result.map { x =>
-        val list = x.foldLeft(emptyList)((r, c) => {
+        val result = x.foldLeft(emptyList)((r, c) => {
           if (c.isSuccess) OfferList.merge(r, c.get) else r
         })
-        val response = buildResponse(
-          requestKey,
-          req,
-          list
-        )
-        response
+        buildEntityResult(requestKey, buildResponse(req, result))
       }
     }
   }
@@ -142,10 +137,9 @@ class MarketplaceRepositoryImpl @Inject()(
     * @return
     */
   private def buildResponse(
-    requestKey: String,
     request: ListRequest,
     offerList: Option[OfferList]
-  ): Option[OfferList] = {
+  ): OfferList = {
 
     val mapParams = ListRequest.filterEmptyParams(request)
     val country = ListRequest.filterCountry(mapParams)
@@ -154,9 +148,42 @@ class MarketplaceRepositoryImpl @Inject()(
     val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
 
-    if (appConfigService.properties("db.enabled").toBoolean && sorted.isDefined) insertOfferLogs(sorted.get)
-    if (appConfigService.properties("cache.enabled").toBoolean && sorted.isDefined) setCacheOfferList(requestKey, sorted.get)
+    if (appConfigService.properties("db.enabled").toBoolean && sorted.list.nonEmpty) insertOfferLogs(sorted)
     sorted
+  }
+
+  /**
+    * if cache is enabled saves in cache first as JSON then returns value wrapped as an Option
+    *
+    * @param detail result object
+    * @return option of device detail
+    */
+  private def buildEntityResult[T: Writes](requestKey: String, obj: T): Option[T] = {
+    updateCache(requestKey, Json.toJson(obj).toString())
+    Some(obj)
+  }
+
+  /**
+    * if cache is enabled saves in cache then returns same value Option
+    *
+    * @param detail result option
+    * @return result
+    */
+  private def buildEntityResult[T: Writes](requestKey: String, obj: Option[T]): Option[T] = {
+    updateCache(requestKey, Json.toJson(obj).toString())
+    obj
+  }
+
+  /**
+    * if cache is enabled saves in cache as JSON
+    *
+    * @param key key to cache
+    * @param json value of mapping
+    */
+  private def updateCache(key: String, json: String): Unit = {
+    if (appConfigService.properties("cache.enabled").toBoolean) {
+      cache.set(key, json)
+    }
   }
 
   /**
@@ -272,17 +299,6 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   /**
-    * check if cache is enabled and saves record inside in-memory cache (redis)
-    *
-    */
-  private def setCacheOfferList(requestKey: String, item: OfferList): Unit = {
-    logger.info(s"cache set: $requestKey")
-    val obj = Json.toJson(item).toString()
-    val savedResult = cache.set(requestKey, obj)
-    if (!savedResult) logger.info("object not saved in cache")
-  }
-
-  /**
     * Sorts list according to various fields
     *
     * @param offerList list to be sorted
@@ -292,7 +308,7 @@ class MarketplaceRepositoryImpl @Inject()(
     * @param asc sort order if "asc" = true otherwise false
     * @return sorted list
     */
-  private def sortList(offerList: Option[OfferList], country: String, keyword: String, sortBy: String, asc: Boolean): Option[OfferList] = {
+  private def sortList(offerList: Option[OfferList], country: String, keyword: String, sortBy: String, asc: Boolean): OfferList = {
     val list: Vector[Offer] = offerList.get.list
 
     val sorted = sortBy match {
@@ -305,11 +321,9 @@ class MarketplaceRepositoryImpl @Inject()(
         if (!keyword.trim().equals("")) sortByGroupedBestResults(list, keyword.trim(), country) else sortGroupedByProvider(list, country)
     }
 
-    Some(
-      new OfferList(
-        sorted.toVector,
-        offerList.get.summary
-      )
+    OfferList(
+      sorted.toVector,
+      offerList.get.summary
     )
   }
 
@@ -388,21 +402,72 @@ class MarketplaceRepositoryImpl @Inject()(
     if (isBlank(Some(id)) || !isValidMarketplaceIdType(idType) || !isValidMarketplaceProvider(source)) {
       Future.successful(None)
     } else {
-      val json = if (appConfigService.properties("cache.enabled").toBoolean) cache.get(id) else None
+      val cacheKey = OfferDetail.buildCacheKey(id)
+      val json = if (appConfigService.properties("cache.enabled").toBoolean) cache.get(cacheKey) else None
       if (json.isDefined) {
         Future.successful(Some(Json.parse(json.get).as[OfferDetail]))
       } else {
         val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
-
-        fetchProductDetail(id, idType, source).map { detail =>
-          Await.result(fetchDetailItemsAndLastLog(detail, Upc), timeout.toInt millis)
-        }
+        fetchProductDetail(id, idType, source).map(
+          detail =>
+            buildEntityResult(
+              cacheKey,
+              Await.result(fetchDetailItems(detail, Upc), timeout.toInt millis)
+          )
+        )
       }
     }
   }
 
-  private def isValidMarketplaceProvider(str: String): Boolean = isValidMarketplaceProvider(UnitedStates, str)
-  private def isValidMarketplaceProvider(country: String, str: String): Boolean = getMarketplaceProvidersByCountry(country).contains(str)
+  /**
+    * Decorates an Offer Detail fetching and adding additional info for this offer detail such as
+    *
+    * - detail items from other sources using same UPC
+    * - analytics contained in last log using UPC as param
+    *
+    * @param detail
+    * @param idType
+    * @param country
+    * @return
+    */
+  private def fetchDetailItems(
+    detail: Option[OfferDetail],
+    idType: String
+  ): Future[Option[OfferDetail]] = {
+
+    val detailWithItems = getProductDetailItems(detail, idType)
+
+    detailWithItems.map { x =>
+      if (x.isDefined && x.get.offer.upc.isDefined) {
+        val lastOfferLog = getLastInsertedOfferLog(x.get.offer.upc.get)
+        Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems, lastOfferLog))
+      } else {
+        x
+      }
+    }
+  }
+
+  /**
+    * fetch product detail items from sources different than source (competitors other than original product source)
+    */
+  private def getProductDetailItems(detail: Option[OfferDetail], idType: String): Future[Option[OfferDetail]] = {
+    if (detail.isEmpty || detail.get.offer.upc.isEmpty || isBlank(detail.get.offer.upc.get)) {
+      Future.successful(detail)
+    } else {
+      idType match {
+        case Upc =>
+          val providers = getMarketplaceProviders().filter(!_.equals(detail.get.offer.partyName))
+          val upc = detail.get.offer.upc.get
+          val listFutures = for (provider <- providers) yield fetchProductDetail(upc, Upc, provider)
+          val response = waitAll(listFutures)
+          response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) OfferDetail.mergeOption(r, c.get) else r }) }
+
+        case _ =>
+          logger.error(s"getProductDetailItems - No UPC found. IdType: $idType")
+          Future.successful(None)
+      }
+    }
+  }
 
   private def fetchProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
     val future: Future[Option[OfferDetail]] = source match {
@@ -465,84 +530,7 @@ class MarketplaceRepositoryImpl @Inject()(
     }
   }
 
-  private def mergeResponseProductDetail(response: Option[OfferDetail], response2: Option[OfferDetail]): Option[OfferDetail] = {
-    if (response.isEmpty) {
-      None
-    } else if (response2.isEmpty) {
-      response
-    } else {
-      val item1 = response.get
-      val item = response2.get
-
-      // return a new merged OfferDetail obj.
-      Some(
-        OfferDetail(
-          item1.offer,
-          item1.description,
-          item1.attributes,
-          item1.productDetailItems ++ Seq(
-            new OfferDetailItem(
-              item.offer.partyName,
-              item.offer.semanticName,
-              item.offer.partyImageFileUrl,
-              item.offer.price,
-              item.offer.rating,
-              item.offer.numReviews
-            )
-          )
-        )
-      )
-    }
-  }
-
-  /**
-    * Decorates an Offer Detail fetching and adding additional info for this offer detail such as
-    *
-    * - detail items from other sources using same UPC
-    * - analytics contained in last log using UPC as param
-    *
-    * @param detail
-    * @param idType
-    * @param country
-    * @return
-    */
-  private def fetchDetailItemsAndLastLog(
-    detail: Option[OfferDetail],
-    idType: String
-  ): Future[Option[OfferDetail]] = {
-
-    val detailWithItems = getProductDetailItems(detail, idType)
-
-    detailWithItems.map { x =>
-      if (x.isDefined && x.get.offer.upc.isDefined) {
-        val lastOfferLog = getLastInsertedOfferLog(x.get.offer.upc.get)
-        Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems, lastOfferLog))
-      } else {
-        x
-      }
-    }
-  }
-
-  /**
-    * fetch product detail items from sources different than source (competitors other than original product source)
-    */
-  private def getProductDetailItems(detail: Option[OfferDetail], idType: String): Future[Option[OfferDetail]] = {
-    if (detail.isEmpty || detail.get.offer.upc.isEmpty || isBlank(detail.get.offer.upc.get)) {
-      Future.successful(detail)
-    } else {
-      idType match {
-        case Upc =>
-          val providers = getMarketplaceProviders().filter(!_.equals(detail.get.offer.partyName))
-          val upc = detail.get.offer.upc.get
-          val listFutures = for (provider <- providers) yield fetchProductDetail(upc, Upc, provider)
-          val response = waitAll(listFutures)
-          response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) mergeResponseProductDetail(r, c.get) else r }) }
-
-        case _ =>
-          logger.error(s"getProductDetailItems - No UPC found. IdType: $idType")
-          Future.successful(None)
-      }
-    }
-  }
+  private def isValidMarketplaceProvider(str: String): Boolean = isValidMarketplaceProvider(UnitedStates, str)
+  private def isValidMarketplaceProvider(country: String, str: String): Boolean = getMarketplaceProvidersByCountry(country).contains(str)
 
 }
