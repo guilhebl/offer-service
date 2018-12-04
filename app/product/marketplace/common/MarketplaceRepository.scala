@@ -74,7 +74,7 @@ class MarketplaceRepositoryImpl @Inject()(
     extends MarketplaceRepository {
 
   private val logger = Logger(this.getClass)
-  private val CollectionOfferLog = "offerLog"
+  private val CollectionOfferPriceLog = "offerLog"
 
   /**
     *  Searches in first page only
@@ -148,7 +148,7 @@ class MarketplaceRepositoryImpl @Inject()(
     val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
 
-    if (appConfigService.properties("db.enabled").toBoolean && sorted.list.nonEmpty) insertOfferLogs(sorted)
+    if (appConfigService.properties("db.enabled").toBoolean && sorted.list.nonEmpty) insertOfferPriceLogs(sorted)
     sorted
   }
 
@@ -191,47 +191,58 @@ class MarketplaceRepositoryImpl @Inject()(
     *
     * inserts a log of each single offer in list
     *
-    * - a snapshot of the object in time
+    * - a snapshot of the price of the object in time
+    * - only inserts if offer has UPC
     *
     * @param item OfferList
     */
-  private def insertOfferLogs(item: OfferList): Unit = {
-    logger.info("Insert OfferLogs")
+  private def insertOfferPriceLogs(item: OfferList): Unit = {
+    logger.info("Insert OfferPriceLogs")
     val cal = Calendar.getInstance()
     val offersWithUpc = item.list.withFilter(_.upc.isDefined)
 
     offersWithUpc.foreach(x => {
-      val upc = x.upc.get
-      val lastOfferLog = getLastInsertedOfferLog(upc)
-
-      val offerLog = lastOfferLog match {
-        case Some(last) =>
-          OfferLog(upc, x, cal.getTimeInMillis, last.totalViews + 1, getCurrentDayViews(last) + 1, getCurrentMonthViews(last) + 1)
-        case _ => OfferLog(upc, x, cal.getTimeInMillis, 1, 1, 1)
+      x.upc match {
+        case Some(upc) =>
+          insertOfferPriceLog(
+            OfferPriceLog(upc, x.partyName, x.price, cal.getTimeInMillis)
+          )
       }
-
-      insertOfferLog(offerLog)
     })
   }
 
-  private def getCurrentDayViews(offerLog: OfferLog): Long = {
-    if (DateUtil.isWithinLast24Hours(offerLog.timestamp)) offerLog.currentDayViews else 0
-  }
-
-  private def getCurrentMonthViews(offerLog: OfferLog): Long = {
-    if (DateUtil.isWithinCurrentMonthAndYear(offerLog.timestamp)) offerLog.currentMonthViews else 0
-  }
-
   /**
-    * Gets the last inserted timestamp record for this upc
+    * Gets the offer price logs for this upc
     *
     * @param upc upc to search in DB
     * @return
     */
-  private def getLastInsertedOfferLog(upc: String): Option[OfferLog] = {
+  private def getOfferPriceLogs(upc: String): Vector[OfferPriceLog] = {
     if (appConfigService.properties("db.enabled").toBoolean) {
-      val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionOfferLog)
+      val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferPriceLog)
 
+      val f = collection
+        .find(equal("upc", upc))
+        .sort(descending("timestamp"))
+        .toFuture()
+
+      val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+      val offerLogs = Await.result(f, timeout.toInt millis)
+      offerLogs.toVector
+    } else {
+      Vector.empty[OfferPriceLog]
+    }
+  }
+
+  /**
+    * Gets the last inserted offer price log for this upc
+    *
+    * @param upc upc to search in DB
+    * @return
+    */
+  private def getLastOfferPriceLog(upc: String): Option[OfferPriceLog] = {
+    if (appConfigService.properties("db.enabled").toBoolean) {
+      val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferPriceLog)
       val f = collection
         .find(equal("upc", upc))
         .sort(descending("timestamp"))
@@ -239,15 +250,8 @@ class MarketplaceRepositoryImpl @Inject()(
         .toFuture()
 
       val timeout = appConfigService.properties("mongoDb.defaultTimeout")
-      val result = Await.result(f, timeout.toInt millis)
-      logger.info(s"getLastInsertedOfferLog: $result")
-
-      if (result.isEmpty) {
-        logger.info("No Records Found!")
-        None
-      } else {
-        Some(result.head)
-      }
+      val offerLogs = Await.result(f, timeout.toInt millis)
+      offerLogs.headOption
 
     } else {
       None
@@ -255,15 +259,35 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   /**
+    * check if last price log is past within timewindow T
+    * and if not inserts a new price log.
+    *
+    * for example checks to see if the last price log saved in DB was 24h or more
+    * if so proceeds and saves new record offer price log
+    *
+    * @param item OfferPriceLog
+    */
+  private def insertOfferPriceLog(item: OfferPriceLog): Unit = {
+    logger.info(s"Insert OfferPrice Log " + item.upc)
+    val lastPriceLog = getLastOfferPriceLog(item.upc)
+    val cycleSeconds = appConfigService.properties("offer.priceLog.timeWindow").toLong
+    if (lastPriceLog.isDefined && !DateUtil.isBeforeSeconds(lastPriceLog.get.timestamp, cycleSeconds)) {
+      logger.info(s"last price log within cycle of $cycleSeconds seconds - skipping " + item.upc)
+    } else {
+      insertOfferPriceLogDb(item)
+    }
+  }
+
+  /**
     * check if DB is enabled and saves record
     *
-    * inserts a log of offer
+    * inserts a OfferPriceLog of offer
     *
-    * @param item OffeLog
+    * @param item OfferPriceLog
     */
-  private def insertOfferLog(item: OfferLog): Unit = {
-    logger.info(s"Insert Offer Log " + item.upc)
-    val collection: MongoCollection[OfferLog] = mongoDbService.getDatabase.getCollection(CollectionOfferLog)
+  private def insertOfferPriceLogDb(item: OfferPriceLog): Unit = {
+    logger.info(s"Insert OfferPrice Log DB " + item.upc)
+    val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferPriceLog)
     val f = collection.insertOne(item).toFutureOption().map {
       case Some(_) => logger.info("Record Inserted in Db")
       case _ => logger.info("ERROR: Failed to Insert record in Db!")
@@ -279,7 +303,7 @@ class MarketplaceRepositoryImpl @Inject()(
     */
   private def deleteOldOfferPriceLogs(): Future[Long] = {
     logger.info("delete old price logs")
-    val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferLog)
+    val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferPriceLog)
     val timeout = appConfigService.properties("mongoDb.defaultTimeout")
     val startOfMonth = DateUtil.getStartOfMonthTimestamp()
 
@@ -439,8 +463,8 @@ class MarketplaceRepositoryImpl @Inject()(
 
     detailWithItems.map { x =>
       if (x.isDefined && x.get.offer.upc.isDefined) {
-        val lastOfferLog = getLastInsertedOfferLog(x.get.offer.upc.get)
-        Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems, lastOfferLog))
+        val offerPriceLogs = getOfferPriceLogs(x.get.offer.upc.get)
+        Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems, offerPriceLogs))
       } else {
         x
       }

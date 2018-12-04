@@ -158,7 +158,8 @@ class AmazonRepositoryImpl @Inject()(
           itemAttrs \ "Model",
           itemAttrs \ "Publisher"
         ),
-        Vector.empty[OfferDetailItem]
+        Vector.empty[OfferDetailItem],
+        Vector.empty[OfferPriceLog]
       )
 
       Some(detail)

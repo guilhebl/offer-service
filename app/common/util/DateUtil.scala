@@ -115,6 +115,31 @@ object DateUtil {
     within24Hours
   }
 
+  /**
+    * Is that moment (a) not before X seconds ago, AND (b) before now (not in the future)?
+    * @param date date to test with
+    * @return if in last T window or not
+    */
+  def isWithinLastSeconds(date: Date, t: Long) = {
+    import java.time.temporal.ChronoUnit
+    val lastTime = date.toInstant
+    val now = Instant.now
+    val lastCycle = now.minus(t, ChronoUnit.SECONDS)
+    (!lastTime.isBefore(lastCycle)) && lastTime.isBefore(now)
+  }
+
+  /**
+    * Is that moment (a) before N Seconds ago
+    * @param timestamp timestamp epoch to test with
+    * @return if in last T seconds
+    */
+  def isBeforeSeconds(timestamp: Long, numSeconds: Long) = {
+    import java.time.temporal.ChronoUnit
+    val timestampDate = new Date(timestamp).toInstant
+    val currentTimeWindow = Instant.now.minus(numSeconds, ChronoUnit.SECONDS)
+    timestampDate.isBefore(currentTimeWindow)
+  }
+
   def isWithinLast24Hours(timestamp: Long): Boolean = {
     isWithinLast24Hours(new Date(timestamp))
   }

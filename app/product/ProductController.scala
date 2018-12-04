@@ -56,7 +56,7 @@ class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: 
 
   def get(id: String, idType: String, source: String): Action[AnyContent] = ProductAction.async { implicit request =>
     productResourceHandler.get(id, idType, source).map { product =>
-      Ok(Json.toJson(product))
+      Ok(Json.toJson(product)).enableCors
     }
   }
 

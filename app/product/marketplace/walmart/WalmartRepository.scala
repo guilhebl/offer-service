@@ -274,8 +274,10 @@ class WalmartRepositoryImpl @Inject()
         item.customerRating.getOrElse("0").toFloat,
         item.numReviews.getOrElse(0)),
       filterHtmlTags(item.longDescription),
-      Vector[NameValue](),
-      Vector[OfferDetailItem]())
+      Vector.empty[NameValue],
+      Vector.empty[OfferDetailItem],
+      Vector.empty[OfferPriceLog]
+      )
 
     Some(offerDetail)
   }

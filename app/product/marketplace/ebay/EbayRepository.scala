@@ -252,8 +252,10 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
         0,
         0),
         "",
-        Vector[NameValue](),
-        Vector[OfferDetailItem]())
+        Vector.empty[NameValue],
+        Vector.empty[OfferDetailItem],
+        Vector.empty[OfferPriceLog]
+      )
 
       Some(detail)
     }

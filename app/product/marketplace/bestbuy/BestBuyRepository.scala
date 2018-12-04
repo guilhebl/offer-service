@@ -198,7 +198,8 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
       ),
       "",
       buildProductDetailAttributes(item.manufacturer),
-      Vector.empty[OfferDetailItem]
+      Vector.empty[OfferDetailItem],
+      Vector.empty[OfferPriceLog]
     )
 
     Some(detail)
