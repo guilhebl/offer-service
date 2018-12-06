@@ -25,6 +25,7 @@ import product.marketplace.ebay.EbayRepository
 import product.marketplace.walmart.WalmartRepository
 import product.model._
 
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
@@ -46,19 +47,25 @@ trait MarketplaceRepository extends BaseDomainRepository {
     * @param timeout timeoutUsed that will be used to wait for this call
     * @return result of single iteration or final result
     */
-  protected def searchAll(acc: OfferList, request: ListRequest, page: Int, timeout: Int): Future[Option[OfferList]] = {
-    ThreadLogger.log(s"searchAll - request: $request, $page")
-    val future = search(ListRequest.fromPage(request, page))
-    val result = Await.result(future, timeout millis)
-    val merged = OfferList.merge(Some(acc), result)
+  protected def searchAll(acc: OfferList, request: ListRequest, timeout: Int): Future[Option[OfferList]] = {
+    @tailrec
+    def searchOffers(acc: OfferList, request: ListRequest, page: Int, timeout: Int): Future[Option[OfferList]] = {
+      ThreadLogger.log(s"searchAll - request: $request, $page")
+      val future = search(ListRequest.fromPage(request, page))
+      val result = Await.result(future, timeout millis)
+      val merged = OfferList.merge(Some(acc), result)
 
-    // verify if above last page stop
-    if (page + 1 > merged.get.summary.pageCount) {
-      Future.successful(merged)
-    } else {
-      searchAll(merged.get, request, page + 1, timeout)
+      // verify if above last page
+      if (page + 1 > merged.get.summary.pageCount) {
+        Future.successful(merged)
+      } else {
+        searchOffers(merged.get, request, page + 1, timeout)
+      }
     }
+
+    searchOffers(acc, request, 1, timeout)
   }
+
 }
 
 @Singleton
@@ -84,7 +91,6 @@ class MarketplaceRepositoryImpl @Inject()(
     */
   override def search(req: ListRequest): Future[Option[OfferList]] = {
     search(req, searchSource)
-
   }
 
   /**
@@ -148,7 +154,9 @@ class MarketplaceRepositoryImpl @Inject()(
     val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
 
-    if (appConfigService.properties("db.enabled").toBoolean && sorted.list.nonEmpty) insertOfferPriceLogs(sorted)
+    if (sorted.list.nonEmpty && appConfigService.properties("offer.snapshot.upc.tracker.enabled").toBoolean) {
+      insertOfferPriceLogs(sorted)
+    }
     sorted
   }
 
@@ -198,32 +206,28 @@ class MarketplaceRepositoryImpl @Inject()(
     */
   private def insertOfferPriceLogs(item: OfferList): Unit = {
     logger.info("Insert OfferPriceLogs")
-    val cal = Calendar.getInstance()
-    val offersWithUpc = item.list.withFilter(_.upc.isDefined)
-
-    offersWithUpc.foreach(x => {
-      x.upc match {
-        case Some(upc) =>
-          insertOfferPriceLog(
-            OfferPriceLog(upc, x.partyName, x.price, cal.getTimeInMillis)
-          )
-      }
-    })
+    if (appConfigService.properties("db.enabled").toBoolean) {
+      val cal = Calendar.getInstance()
+      val offersWithUpc = item.list.filter(_.upc.isDefined)
+      offersWithUpc.foreach(x => insertOfferPriceLog(OfferPriceLog(x.upc.get, x.partyName, x.price, cal.getTimeInMillis)))
+    }
   }
 
   /**
     * Gets the offer price logs for this upc
     *
     * @param upc upc to search in DB
+    * @param limit limit num of records
     * @return
     */
-  private def getOfferPriceLogs(upc: String): Vector[OfferPriceLog] = {
+  private def getOfferPriceLogs(upc: String, limit: Int): Vector[OfferPriceLog] = {
     if (appConfigService.properties("db.enabled").toBoolean) {
       val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferPriceLog)
 
       val f = collection
         .find(equal("upc", upc))
         .sort(descending("timestamp"))
+        .limit(limit)
         .toFuture()
 
       val timeout = appConfigService.properties("mongoDb.defaultTimeout")
@@ -236,15 +240,15 @@ class MarketplaceRepositoryImpl @Inject()(
 
   /**
     * Gets the last inserted offer price log for this upc
-    *
+    * @param source provider
     * @param upc upc to search in DB
     * @return
     */
-  private def getLastOfferPriceLog(upc: String): Option[OfferPriceLog] = {
+  private def getLastOfferPriceLog(source: String, upc: String): Option[OfferPriceLog] = {
     if (appConfigService.properties("db.enabled").toBoolean) {
       val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferPriceLog)
       val f = collection
-        .find(equal("upc", upc))
+        .find(and(equal("source", source), equal("upc", upc)))
         .sort(descending("timestamp"))
         .limit(1)
         .toFuture()
@@ -268,11 +272,14 @@ class MarketplaceRepositoryImpl @Inject()(
     * @param item OfferPriceLog
     */
   private def insertOfferPriceLog(item: OfferPriceLog): Unit = {
-    logger.info(s"Insert OfferPrice Log " + item.upc)
-    val lastPriceLog = getLastOfferPriceLog(item.upc)
+    val source = item.source
+    val upc = item.upc
+    logger.info(s"Insert OfferPrice Log $source, $upc")
+
+    val lastPriceLog = getLastOfferPriceLog(source, upc)
     val cycleSeconds = appConfigService.properties("offer.priceLog.timeWindow").toLong
     if (lastPriceLog.isDefined && !DateUtil.isBeforeSeconds(lastPriceLog.get.timestamp, cycleSeconds)) {
-      logger.info(s"last price log within cycle of $cycleSeconds seconds - skipping " + item.upc)
+      logger.info(s"Skip: $source, $upc")
     } else {
       insertOfferPriceLogDb(item)
     }
@@ -463,7 +470,7 @@ class MarketplaceRepositoryImpl @Inject()(
 
     detailWithItems.map { x =>
       if (x.isDefined && x.get.offer.upc.isDefined) {
-        val offerPriceLogs = getOfferPriceLogs(x.get.offer.upc.get)
+        val offerPriceLogs = getOfferPriceLogs(x.get.offer.upc.get, appConfigService.properties("offer.priceLog.getDetail.limit").toInt)
         Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems, offerPriceLogs))
       } else {
         x

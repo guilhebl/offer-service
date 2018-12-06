@@ -26,7 +26,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
   private val logger = Logger(this.getClass)
 
   override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
-    searchAll(OfferList.empty(), req, 1, appConfigService.properties("marketplaceDefaultTimeout").toInt)
+    searchAll(OfferList.empty(), req, appConfigService.properties("marketplaceDefaultTimeout").toInt)
   }
 
   def search(params: Map[String, String]): Future[Option[OfferList]] = {

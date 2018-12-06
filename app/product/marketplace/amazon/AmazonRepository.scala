@@ -31,7 +31,7 @@ class AmazonRepositoryImpl @Inject()(
   private val logger = Logger(this.getClass)
 
   override def searchAll(req: ListRequest): Future[Option[OfferList]] = {
-    searchAll(OfferList.empty(), req, 1, appConfigService.properties("marketplaceDefaultTimeout").toInt)
+    searchAll(OfferList.empty(), req, appConfigService.properties("marketplaceDefaultTimeout").toInt)
   }
 
   override def search(request: ListRequest): Future[Option[OfferList]] = {
