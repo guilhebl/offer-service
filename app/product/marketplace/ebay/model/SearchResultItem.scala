@@ -9,7 +9,7 @@ case class SearchResultItem (
     globalId : Vector[String],
     galleryURL : Vector[String],
     viewItemURL : Vector[String],
-    paymentMethod : Vector[String],
+    paymentMethod : Option[Vector[String]],
     postalCode : Option[Vector[String]],
     location : Vector[String],
     country : Vector[String],

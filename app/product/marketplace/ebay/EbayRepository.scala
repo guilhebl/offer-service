@@ -1,4 +1,3 @@
-
 package product.marketplace.ebay
 
 import common.config.AppConfigService
@@ -20,8 +19,9 @@ import scala.concurrent.duration._
 trait EbayRepository extends MarketplaceRepository
 
 @Singleton
-class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService,requestMonitor: RequestMonitor)
-(implicit ec: WorkerDispatcherContext) extends EbayRepository {
+class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)(
+  implicit ec: WorkerDispatcherContext
+) extends EbayRepository {
 
   private val logger = Logger(this.getClass)
 
@@ -42,7 +42,8 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
 
     val url = endpoint + '/' + path
 
-    val req: WSRequest = ws.url(url)
+    val req: WSRequest = ws
+      .url(url)
       .addHttpHeaders("Accept" -> "application/json")
       .addQueryStringParameters(
         "OPERATION-NAME" -> "findItemsByKeywords",
@@ -56,40 +57,34 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
         "outputSelector" -> "PictureURLLarge", // add large picture to standard result
         "paginationInput.pageNumber" -> params(Page),
         "paginationInput.entriesPerPage" -> pageSize.toString,
-        Keywords -> params(Keywords))
+        Keywords -> params(Keywords)
+      )
       .withRequestTimeout(timeout.toInt.millis)
 
     logger.info("Ebay: " + req.uri)
 
-    val futureResult: Future[Option[EbaySearchResponse]] = req.get()
-      .map {
-        response =>
-          val resp = response.json.validate[EbaySearchResponse]
-          resp match {
-            case s: JsSuccess[EbaySearchResponse] => Some(s.get)
-            case e: JsError =>
-              logger.info("Errors: " + JsError.toJson(e).toString())
-              None
-          }
+    req.get().map { response =>
+      val resp = response.json.validate[EbaySearchResponse]
+      resp match {
+        case s: JsSuccess[EbaySearchResponse] => buildList(s.get)
+        case e: JsError =>
+          logger.info("Errors: " + JsError.toJson(e).toString())
+          None
       }
-
-    futureResult.map {
-      case Some(entity) => buildList(entity)
-      case _ => None
     }
   }
 
   override def search(request: ListRequest): Future[Option[OfferList]] = {
-		if (!requestMonitor.isRequestPossible(Ebay)) {
-		    logger.info(s"Unable to acquire lock from Request Monitor")
-        Future.successful(None)
-		} else {
+    if (!requestMonitor.isRequestPossible(Ebay)) {
+      logger.info(s"Unable to acquire lock from Request Monitor")
+      Future.successful(None)
+    } else {
       val params = getVendorSpecificParams(ListRequest.filterEmptyParams(request))
       search(params)
     }
   }
 
-  private def getEbayGlobalId(country : String) = {
+  private def getEbayGlobalId(country: String) = {
     country match {
       case Canada => "EBAY-ENCA"
       case _ => "EBAY-US"
@@ -123,7 +118,8 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
 
     val url = endpoint + '/' + path
 
-    val req: WSRequest = ws.url(url)
+    val req: WSRequest = ws
+      .url(url)
       .addHttpHeaders("Accept" -> "application/json")
       .addQueryStringParameters(
         "OPERATION-NAME" -> "findItemsByProduct",
@@ -138,30 +134,23 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
         "productId.@type" -> idTypeEbay,
         "productId" -> id,
         "paginationInput.entriesPerPage" -> "1"
-      ).withRequestTimeout(timeout.toInt.millis)
+      )
+      .withRequestTimeout(timeout.toInt.millis)
 
     logger.info("Ebay get By " + idTypeEbay + " " + req.uri)
 
-    val futureResult: Future[Option[EbayProductDetailResponse]] = req.get()
-      .map {
-        response => {
-          val resp = response.json.validate[EbayProductDetailResponse]
-          resp match {
-            case s: JsSuccess[EbayProductDetailResponse] => Some(s.get)
-            case e: JsError =>
-              logger.info("Errors: " + JsError.toJson(e).toString())
-              None
-          }
-        }
+    req.get().map { response =>
+      response.json.validate[EbayProductDetailResponse] match {
+        case s: JsSuccess[EbayProductDetailResponse] => buildProductDetail(s.get)
+        case e: JsError =>
+          logger.info("Errors: " + JsError.toJson(e).toString())
+          None
       }
 
-    futureResult.map {
-      case Some(entity) => buildProductDetail(entity)
-      case _ => None
     }
   }
 
-  private def getEbayIdType(idType : String): Option[String] = {
+  private def getEbayIdType(idType: String): Option[String] = {
     idType match {
       case Id => Some("ReferenceID")
       case Upc => Some("UPC")
@@ -170,7 +159,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
   }
 
   private def getVendorSpecificParams(params: Map[String, String]): Map[String, String] = {
-    val p = scala.collection.mutable.Map[String,String]()
+    val p = scala.collection.mutable.Map[String, String]()
 
     // get search keyword phrase
     if (params.contains(Name)) {
@@ -181,7 +170,7 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
 
     // get page - defaults to 1
     params.get(Page) match {
-      case None    => p(Page) = 1.toString
+      case None => p(Page) = 1.toString
       case Some(v) => p(Page) = v
     }
 
@@ -190,26 +179,27 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
 
     p.toMap
   }
-  
+
   private def getRandomSearchQuery(query: String, separator: String) = {
-    val strings = query.split(separator)    
+    val strings = query.split(separator)
     val r = scala.util.Random
     strings(r.nextInt(strings.length))
   }
-  
+
   private def buildList(r: EbaySearchResponse): Option[OfferList] = {
     ThreadLogger.log("Ebay buildList")
     val summary = new ListSummary(
-        r.findItemsByKeywordsResponse.head.paginationOutput.get.head.pageNumber.head.toInt,
-        r.findItemsByKeywordsResponse.head.paginationOutput.get.head.totalPages.head.toInt,
-        r.findItemsByKeywordsResponse.head.paginationOutput.get.head.totalEntries.head.toInt)
+      r.findItemsByKeywordsResponse.head.paginationOutput.get.head.pageNumber.head.toInt,
+      r.findItemsByKeywordsResponse.head.paginationOutput.get.head.totalPages.head.toInt,
+      r.findItemsByKeywordsResponse.head.paginationOutput.get.head.totalEntries.head.toInt
+    )
     val resp = new OfferList(buildListItems(r.findItemsByKeywordsResponse.head.searchResult.get.head.item), summary)
     Some(resp)
   }
 
   private def buildListItems(items: Vector[SearchResultItem]): Vector[Offer] = {
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Ebay) != -1
-    
+
     val list = items.map((item: SearchResultItem) => {
       val productId = if (item.productId.isEmpty) item.itemId.head else item.productId.get.head.value
       val imgUrl = if (item.pictureURLLarge.isEmpty) "" else item.pictureURLLarge.get.head
@@ -226,20 +216,20 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
         item.sellingStatus.head.convertedCurrentPrice.head.value.toDouble,
         item.primaryCategory.head.categoryName.mkString,
         0,
-        0)
+        0
+      )
     })
     list
   }
 
-    private def buildProductDetail(item : SearchResultItem): Option[OfferDetail] = {
-      val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Ebay) != -1
+  private def buildProductDetail(item: SearchResultItem): Option[OfferDetail] = {
+    val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Ebay) != -1
+    val productId = if (item.productId.isEmpty) item.itemId.head else item.productId.get.head.value
+    val imgUrl = if (item.pictureURLLarge.isEmpty) "" else item.pictureURLLarge.get.head
+    val itemSellerUrl = if (item.viewItemURL == null) "" else item.viewItemURL.head
 
-      val productId = if (item.productId.isEmpty) item.itemId.head else item.productId.get.head.value
-      val imgUrl = if (item.pictureURLLarge.isEmpty) "" else item.pictureURLLarge.get.head
-      val itemSellerUrl = if (item.viewItemURL == null) "" else item.viewItemURL.head
-
-      val detail = new OfferDetail(
-        new Offer(
+    val detail = new OfferDetail(
+      new Offer(
         productId,
         None,
         item.title.mkString,
@@ -250,22 +240,23 @@ class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigServ
         item.sellingStatus.head.convertedCurrentPrice.head.value.toDouble,
         item.primaryCategory.head.categoryName.mkString,
         0,
-        0),
-        "",
-        Vector.empty[NameValue],
-        Vector.empty[OfferDetailItem],
-        Vector.empty[OfferPriceLog]
-      )
+        0
+      ),
+      "",
+      Vector.empty[NameValue],
+      Vector.empty[OfferDetailItem],
+      Vector.empty[OfferPriceLog]
+    )
 
-      Some(detail)
-    }
+    Some(detail)
+  }
 
-    private def buildProductDetail(item : EbayProductDetailResponse): Option[OfferDetail] = {
-      if (item.findItemsByProductResponse.head.searchResult.isEmpty) {
-        None
-      } else {
-        buildProductDetail(item.findItemsByProductResponse.head.searchResult.get.head.item.head)
-      }
+  private def buildProductDetail(item: EbayProductDetailResponse): Option[OfferDetail] = {
+    if (item.findItemsByProductResponse.head.searchResult.isEmpty) {
+      None
+    } else {
+      buildProductDetail(item.findItemsByProductResponse.head.searchResult.get.head.item.head)
     }
+  }
 
 }

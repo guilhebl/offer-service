@@ -3,7 +3,7 @@ package product.marketplace.bestbuy.model
 import play.api.libs.json.Json
 
 case class ProductImages (
-    standard : String
+    standard : Option[String]
 )
 
 object ProductImages {

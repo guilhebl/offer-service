@@ -20,9 +20,9 @@ import scala.concurrent.duration._
 trait WalmartRepository extends MarketplaceRepository
 
 @Singleton
-class WalmartRepositoryImpl @Inject()
-(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)
-(implicit ec: WorkerDispatcherContext) extends WalmartRepository {
+class WalmartRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)(
+  implicit ec: WorkerDispatcherContext
+) extends WalmartRepository {
 
   private val logger = Logger(this.getClass)
 
@@ -37,10 +37,10 @@ class WalmartRepositoryImpl @Inject()
     val params = filterParamsSearch(ListRequest.filterEmptyParams(request))
 
     // try to acquire lock from request Monitor
-		if (!requestMonitor.isRequestPossible(Walmart) || params.isEmpty) {
+    if (!requestMonitor.isRequestPossible(Walmart) || params.isEmpty) {
       logger.info(s"Error: Unable to acquire lock from Request Monitor or params is Empty")
       Future.successful(None)
-		} else {
+    } else {
       search(params)
     }
   }
@@ -56,7 +56,8 @@ class WalmartRepositoryImpl @Inject()
     val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
     val url = endpoint + '/' + appConfigService.properties("walmartUSProductSearchPath")
-    val req: WSRequest = ws.url(url)
+    val req: WSRequest = ws
+      .url(url)
       .addHttpHeaders("Accept" -> "application/json")
       .addQueryStringParameters(
         "format" -> "json",
@@ -64,32 +65,27 @@ class WalmartRepositoryImpl @Inject()
         "apiKey" -> apiKey,
         "lsPublisherId" -> affiliateId,
         "query" -> params("query"),
-        "start" -> start.toString)
+        "start" -> start.toString
+      )
       .withRequestTimeout(timeout.toInt.millis)
 
     logger.info("Walmart: " + req.uri)
 
-    val futureResult: Future[Option[WalmartSearchResponse]] = req.get().map {
-      response =>
-      {
-        val resp = response.json.validate[WalmartSearchResponse]
-        resp match {
-          case s: JsSuccess[WalmartSearchResponse] => Some(s.get)
-          case e: JsError =>
-            logger.info("Errors: " + JsError.toJson(e).toString())
-            None
-        }
+    req.get().map { response =>
+      val resp = response.json.validate[WalmartSearchResponse]
+      resp match {
+        case s: JsSuccess[WalmartSearchResponse] => buildList(s.get, pageSize)
+        case e: JsError =>
+          logger.info("Errors: " + JsError.toJson(e).toString())
+          None
       }
     }
 
-    futureResult.map {
-      case Some(entity) => buildList(entity, pageSize)
-      case _ => None
-    }
   }
 
   /**
-  * searches trending products if no search query present
+    * searches trending products if no search query present
+    *
     * @param params params for search
     * @return trending products list
     */
@@ -103,33 +99,23 @@ class WalmartRepositoryImpl @Inject()
     val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
     val url = endpoint + '/' + appConfigService.properties("walmartUSProductTrendingPath")
-    val req: WSRequest = ws.url(url)
+    val req: WSRequest = ws
+      .url(url)
       .addHttpHeaders("Accept" -> "application/json")
-      .addQueryStringParameters(
-        "format" -> "json",
-        "responseGroup" -> responseGroup,
-        "apiKey" -> apiKey,
-        "lsPublisherId" -> affiliateId)
+      .addQueryStringParameters("format" -> "json", "responseGroup" -> responseGroup, "apiKey" -> apiKey, "lsPublisherId" -> affiliateId)
       .withRequestTimeout(timeout.toInt.millis)
 
     logger.info("Walmart trending: " + req.uri)
 
-    val futureResult: Future[Option[WalmartTrendingSearchResponse]] = req.get().map {
-      response =>
-      {
-        val resp = response.json.validate[WalmartTrendingSearchResponse]
-        resp match {
-          case s: JsSuccess[WalmartTrendingSearchResponse] => Some(s.get)
-          case e: JsError =>
-            logger.info("Errors: " + JsError.toJson(e).toString())
-            None
-        }
+    req.get().map { response =>
+      val resp = response.json.validate[WalmartTrendingSearchResponse]
+      resp match {
+        case s: JsSuccess[WalmartTrendingSearchResponse] => buildList(s.get, page, pageSize)
+        case e: JsError =>
+          logger.info("Errors: " + JsError.toJson(e).toString())
+          None
       }
-    }
 
-    futureResult.map {
-      case Some(entity) => buildList(entity, page, pageSize)
-      case _ => None
     }
   }
 
@@ -151,31 +137,22 @@ class WalmartRepositoryImpl @Inject()
     val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
     val url = endpoint + '/' + path + '/' + id
-    val req: WSRequest = ws.url(url)
+    val req: WSRequest = ws
+      .url(url)
       .addHttpHeaders("Accept" -> "application/json")
-      .addQueryStringParameters(
-        "format" -> "json",
-        "apiKey" -> apiKey,
-        "lsPublisherId" -> affiliateId)
+      .addQueryStringParameters("format" -> "json", "apiKey" -> apiKey, "lsPublisherId" -> affiliateId)
       .withRequestTimeout(timeout.toInt.millis)
 
     logger.info("Walmart get: " + req.uri)
 
-    val futureResult: Future[Option[WalmartSearchItem]] = req.get().map {
-      response => {
-        val resp = response.json.validate[WalmartSearchItem]
-        resp match {
-          case s: JsSuccess[WalmartSearchItem] => Some(s.get)
-          case e: JsError =>
-            logger.info("Errors: " + JsError.toJson(e).toString())
-            None
-        }
+    req.get().map { response =>
+      val resp = response.json.validate[WalmartSearchItem]
+      resp match {
+        case s: JsSuccess[WalmartSearchItem] => buildProductDetail(s.get)
+        case e: JsError =>
+          logger.info("Errors: " + JsError.toJson(e).toString())
+          None
       }
-    }
-
-    futureResult.map {
-      case Some(entity) => buildProductDetail(entity)
-      case _ => None
     }
   }
 
@@ -187,51 +164,41 @@ class WalmartRepositoryImpl @Inject()
     val timeout = appConfigService.properties("marketplaceDefaultTimeout")
 
     val url = endpoint + '/' + path
-    val req: WSRequest = ws.url(url)
+    val req: WSRequest = ws
+      .url(url)
       .addHttpHeaders("Accept" -> "application/json")
-      .addQueryStringParameters(
-        Upc -> upc,
-        "format" -> "json",
-        "apiKey" -> apiKey,
-        "lsPublisherId" -> affiliateId)
+      .addQueryStringParameters(Upc -> upc, "format" -> "json", "apiKey" -> apiKey, "lsPublisherId" -> affiliateId)
       .withRequestTimeout(timeout.toInt.millis)
     logger.info("Walmart get by Upc: " + req.uri)
-    val futureResult: Future[Option[WalmartSearchBaseResponse]] = req.get().map {
-      response =>
-      {
-        val resp = response.json.validate[WalmartSearchBaseResponse]
-        resp match {
-          case s: JsSuccess[WalmartSearchBaseResponse] => Some(s.get)
-          case e: JsError =>
-            logger.info("Errors: " + JsError.toJson(e).toString())
-            None
-        }
+    req.get().map { response =>
+      val resp = response.json.validate[WalmartSearchBaseResponse]
+      resp match {
+        case s: JsSuccess[WalmartSearchBaseResponse] => buildProductDetail(s.get)
+        case e: JsError =>
+          logger.info("Errors: " + JsError.toJson(e).toString())
+          None
       }
-    }
-    futureResult.map {
-      case Some(entity) => buildProductDetail(entity)
-      case _ => None
     }
   }
 
   override def getProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
-      ThreadLogger.log("Walmart get product Detail")
+    ThreadLogger.log("Walmart get product Detail")
 
-      // try to acquire lock from request Monitor
-      if (!requestMonitor.isRequestPossible(Walmart)) {
-        logger.info(s"Unable to acquire lock from Request Monitor")
-        Future.successful(None)
-      } else {
-        idType match {
-          case Id => getProductDetailById(id)
-          case Upc => getProductDetailByUpc(id)
-          case _ => Future.successful(None)
-        }
+    // try to acquire lock from request Monitor
+    if (!requestMonitor.isRequestPossible(Walmart)) {
+      logger.info(s"Unable to acquire lock from Request Monitor")
+      Future.successful(None)
+    } else {
+      idType match {
+        case Id => getProductDetailById(id)
+        case Upc => getProductDetailByUpc(id)
+        case _ => Future.successful(None)
       }
+    }
   }
 
   private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
-    val p = scala.collection.mutable.Map[String,String]()
+    val p = scala.collection.mutable.Map[String, String]()
 
     // get search keyword phrase
     if (params.contains(Name)) p("query") = params(Name)
@@ -256,7 +223,7 @@ class WalmartRepositoryImpl @Inject()
     Some(resp)
   }
 
-  private def buildProductDetail(item : WalmartSearchItem): Option[OfferDetail] = {
+  private def buildProductDetail(item: WalmartSearchItem): Option[OfferDetail] = {
     ThreadLogger.log("Walmart build product Detail")
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(Walmart) != -1
 
@@ -272,17 +239,18 @@ class WalmartRepositoryImpl @Inject()
         item.salePrice.getOrElse(0.1d),
         item.categoryPath,
         item.customerRating.getOrElse("0").toFloat,
-        item.numReviews.getOrElse(0)),
+        item.numReviews.getOrElse(0)
+      ),
       filterHtmlTags(item.longDescription),
       Vector.empty[NameValue],
       Vector.empty[OfferDetailItem],
       Vector.empty[OfferPriceLog]
-      )
+    )
 
     Some(offerDetail)
   }
 
-  private def buildProductDetail(item : WalmartSearchBaseResponse): Option[OfferDetail] = {
+  private def buildProductDetail(item: WalmartSearchBaseResponse): Option[OfferDetail] = {
     buildProductDetail(item.items.head)
   }
 
@@ -301,7 +269,8 @@ class WalmartRepositoryImpl @Inject()
         item.salePrice.getOrElse(0.1d),
         item.categoryPath,
         item.customerRating.getOrElse("0").toFloat,
-        item.numReviews.getOrElse(0))
+        item.numReviews.getOrElse(0)
+      )
     })
     list
   }

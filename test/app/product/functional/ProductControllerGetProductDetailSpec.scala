@@ -37,7 +37,7 @@ class ProductControllerGetProductDetailSpec extends BaseDomainTest {
       Ok(XML.loadFile(s"$MockMarketplaceFilesPath/amazon/amazon_get_product_detail_by_upc.xml"))
     }
 
-    case (GET, "https://api.bestbuy.com/v1/products(productId=5529006)") => Action {
+    case (GET, "https://api.bestbuy.com/v1/products(sku=5529006)") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/bestbuy/best_buy_get_by_id_prod_detail_response.json").getLines.mkString))
     }
   }
@@ -48,7 +48,7 @@ class ProductControllerGetProductDetailSpec extends BaseDomainTest {
   val appConfigMock = mock[AppConfigService]
   when(appConfigMock.properties) thenReturn testConfigProperties
   when(appConfigMock.buildImgUrl(Some(any[String]))) thenReturn "http://localhost:5555/assets/images/logo.png"
-  when(appConfigMock.buildImgUrlExternal(Some(any[String]), any[Boolean])) thenReturn "https://localhost/images/I/51AdOmJ2vBL.jpg"
+  when(appConfigMock.buildImgUrlExternal(any[Option[String]], any[Boolean])) thenReturn "https://localhost/images/I/51AdOmJ2vBL.jpg"
 
   val appMock = new GuiceApplicationBuilder()
     .overrides(bind[AppConfigService].toInstance(appConfigMock))
@@ -67,7 +67,7 @@ class ProductControllerGetProductDetailSpec extends BaseDomainTest {
     val pdi0 = (json \ "productDetailItems")(0)
 
     status(response) mustBe OK
-    (elem0 \ "id").as[String] mustBe "5529006"
+    (elem0 \ "id").as[String] mustBe "849803052423"
     (elem0 \ "upc").as[String] mustBe "849803052423"
     (elem0 \ "name").as[String] mustBe "Funko - Elder Scrolls V: Skyrim Dovahkiin Pop! Vinyl Figure"
     (elem0 \ "partyName").as[String] mustBe "bestbuy.com"

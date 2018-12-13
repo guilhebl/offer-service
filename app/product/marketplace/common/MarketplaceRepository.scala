@@ -154,9 +154,7 @@ class MarketplaceRepositoryImpl @Inject()(
     val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
 
-    if (sorted.list.nonEmpty && appConfigService.properties("offer.snapshot.upc.tracker.enabled").toBoolean) {
-      insertOfferPriceLogs(sorted)
-    }
+    if (sorted.list.nonEmpty && appConfigService.properties("offer.snapshot.upc.tracker.enabled").toBoolean) insertOfferPriceLogs(sorted)
     sorted
   }
 
@@ -205,8 +203,8 @@ class MarketplaceRepositoryImpl @Inject()(
     * @param item OfferList
     */
   private def insertOfferPriceLogs(item: OfferList): Unit = {
-    logger.info("Insert OfferPriceLogs")
     if (appConfigService.properties("db.enabled").toBoolean) {
+      logger.info("Insert OfferPriceLogs")
       val cal = Calendar.getInstance()
       val offersWithUpc = item.list.filter(_.upc.isDefined)
       offersWithUpc.foreach(x => insertOfferPriceLog(OfferPriceLog(x.upc.get, x.partyName, x.price, cal.getTimeInMillis)))
@@ -467,7 +465,6 @@ class MarketplaceRepositoryImpl @Inject()(
   ): Future[Option[OfferDetail]] = {
 
     val detailWithItems = getProductDetailItems(detail, idType)
-
     detailWithItems.map { x =>
       if (x.isDefined && x.get.offer.upc.isDefined) {
         val offerPriceLogs = getOfferPriceLogs(x.get.offer.upc.get, appConfigService.properties("offer.priceLog.getDetail.limit").toInt)
@@ -494,7 +491,6 @@ class MarketplaceRepositoryImpl @Inject()(
           response.map { _.foldLeft(detail)((r, c) => { if (c.isSuccess) OfferDetail.mergeOption(r, c.get) else r }) }
 
         case _ =>
-          logger.error(s"getProductDetailItems - No UPC found. IdType: $idType")
           Future.successful(None)
       }
     }

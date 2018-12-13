@@ -38,7 +38,7 @@ class ProductControllerGetProductDetailNotFoundSpec extends BaseDomainTest {
       Ok(XML.loadFile(s"$MockMarketplaceFilesPath/amazon/amazon_get_product_detail_by_id_not_found.xml"))
     }
 
-    case (GET, "https://api.bestbuy.com/v1/products(productId=12345678)") => Action {
+    case (GET, "https://api.bestbuy.com/v1/products(sku=12345678)") => Action {
       Ok(Json.parse(Source.fromFile(s"$MockMarketplaceFilesPath/bestbuy/best_buy_get_by_id_prod_detail_not_found.json").getLines.mkString))
     }
   }

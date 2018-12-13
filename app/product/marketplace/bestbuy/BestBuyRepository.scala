@@ -20,8 +20,9 @@ import scala.concurrent.duration._
 trait BestBuyRepository extends MarketplaceRepository
 
 @Singleton
-class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)
-                                     (implicit ec: WorkerDispatcherContext) extends BestBuyRepository {
+class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)(
+  implicit ec: WorkerDispatcherContext
+) extends BestBuyRepository {
 
   private val logger = Logger(this.getClass)
 
@@ -74,22 +75,14 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
       logger.info("BestBuy: " + req.uri)
 
-      val futureResult: Future[Option[BestBuySearchResponse]] = req
-        .get()
-        .map { response => {
-          val resp = response.json.validate[BestBuySearchResponse]
-          resp match {
-            case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
-            case e: JsError =>
-              logger.info("Errors: " + JsError.toJson(e).toString())
-              None
-          }
+      req.get().map { response =>
+        val resp = response.json.validate[BestBuySearchResponse]
+        resp match {
+          case s: JsSuccess[BestBuySearchResponse] => buildList(s.get, pageSize)
+          case e: JsError =>
+            logger.info("Errors: " + JsError.toJson(e).toString())
+            None
         }
-        }
-
-      futureResult.map {
-        case Some(entity) => buildList(entity, pageSize)
-        case _ => None
       }
 
     } else {
@@ -104,29 +97,22 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
       logger.info("BestBuy Trending: " + req.uri)
 
-      val futureResult: Future[Option[BestBuyTrendingResponse]] = req
-        .get()
-        .map { response => {
-          val resp = response.json.validate[BestBuyTrendingResponse]
-          resp match {
-            case s: JsSuccess[BestBuyTrendingResponse] => Some(s.get)
-            case e: JsError =>
-              logger.info("Errors: " + JsError.toJson(e).toString())
-              None
-          }
+      req.get().map { response =>
+        val resp = response.json.validate[BestBuyTrendingResponse]
+        resp match {
+          case s: JsSuccess[BestBuyTrendingResponse] => buildList(s.get)
+          case e: JsError =>
+            logger.info("Errors: " + JsError.toJson(e).toString())
+            None
         }
-        }
-
-      futureResult.map {
-        case Some(entity) => buildList(entity)
-        case _ => None
       }
+
     }
   }
 
   private def filterIdType(str: String): Option[String] = {
     str match {
-      case Id => Some("productId")
+      case Id => Some("sku")
       case Upc => Some("upc")
       case _ => None
     }
@@ -158,22 +144,14 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
       logger.info("BestBuy: " + req.uri)
 
-      val futureResult: Future[Option[BestBuySearchResponse]] = req
-        .get()
-        .map { response => {
-          val resp = response.json.validate[BestBuySearchResponse]
-          resp match {
-            case s: JsSuccess[BestBuySearchResponse] => Some(s.get)
-            case e: JsError =>
-              logger.info("Errors: " + JsError.toJson(e).toString())
-              None
-          }
+      req.get().map { response =>
+        val resp = response.json.validate[BestBuySearchResponse]
+        resp match {
+          case s: JsSuccess[BestBuySearchResponse] => buildProductDetail(s.get)
+          case e: JsError =>
+            logger.info("Errors: " + JsError.toJson(e).toString())
+            None
         }
-        }
-
-      futureResult.map {
-        case Some(entity) => buildProductDetail(entity)
-        case _ => None
       }
     }
   }
@@ -182,20 +160,8 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
     ThreadLogger.log("BestBuy build ProductDetail")
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(BestBuy) != -1
 
-    val detail = new OfferDetail(
-      new Offer(
-        item.productId.get.toString,
-        item.upc,
-        item.name,
-        BestBuy,
-        item.url.get,
-        appConfigService.buildImgUrlExternal(item.image, proxyRequired),
-        appConfigService.buildImgUrl(Some("best-buy-logo.png")),
-        item.salePrice,
-        buildCategoryPath(item.categoryPath),
-        item.customerReviewAverage.getOrElse(0.0f),
-        item.customerReviewCount.getOrElse(0)
-      ),
+    val detail = OfferDetail(
+      buildOffer(item, proxyRequired),
       "",
       buildProductDetailAttributes(item.manufacturer),
       Vector.empty[OfferDetailItem],
@@ -225,10 +191,9 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
   /**
 	 * Builds search path pattern for US best buy api
-	 *
 	 * sample: input 'deals of the day' : output -> (search=deals&search=of&search=the&search=day)
 	 *
-	 * @param s
+	 * @param s builds search path from string
 	 * @return
 	 */
   private def buildSearchPath(s: String): String = {
@@ -246,7 +211,7 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
   }
 
   private def filterParamsSearch(params: Map[String, String]): Map[String, String] = {
-    val p = scala.collection.mutable.Map[String,String]()
+    val p = scala.collection.mutable.Map[String, String]()
 
     // get search keyword phrase
     if (params.contains(Name)) p += ("keywords" -> buildSearchPath(params(Name)))
@@ -286,51 +251,49 @@ class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigS
 
   private def buildTrendingListItems(items: Vector[ProductSpecialOfferItem]): Vector[Offer] = {
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(BestBuy) != -1
+    items.map(buildOffer(_, proxyRequired))
+  }
 
-    val list = items.map((item: ProductSpecialOfferItem) => {
-      new Offer(
-        item.sku,
-        None,
-        item.names.title,
-        BestBuy,
-        item.links.web,
-        appConfigService.buildImgUrlExternal(Some(item.images.standard), proxyRequired),
-        appConfigService.buildImgUrl(Some("best-buy-logo.png")),
-        item.prices.current,
-        "special offer",
-        item.customerReviews.averageScore.getOrElse(0.0f),
-        item.customerReviews.count.getOrElse(0)
-      )
-    })
+  private def buildOffer(item: ProductItem, proxyRequired: Boolean): Offer = {
+    Offer(
+      buildProductId(item),
+      if (item.upc.isDefined) Some(item.upc.get.toString) else None,
+      item.name,
+      BestBuy,
+      item.url.getOrElse(""),
+      appConfigService.buildImgUrlExternal(item.image, proxyRequired),
+      appConfigService.buildImgUrl(Some("best-buy-logo.png")),
+      item.salePrice,
+      buildCategoryPath(item.categoryPath),
+      item.customerReviewAverage.getOrElse(0.0f),
+      item.customerReviewCount.getOrElse(0)
+    )
+  }
 
-    list
+  private def buildOffer(item: ProductSpecialOfferItem, proxyRequired: Boolean): Offer = {
+    Offer(
+      item.sku,
+      None,
+      item.names.title,
+      BestBuy,
+      item.links.web,
+      appConfigService.buildImgUrlExternal(item.images.standard, proxyRequired),
+      appConfigService.buildImgUrl(Some("best-buy-logo.png")),
+      item.prices.current,
+      "special offer",
+      item.customerReviews.averageScore.getOrElse(0.0f),
+      item.customerReviews.count.getOrElse(0)
+    )
   }
 
   private def buildListItems(items: Vector[ProductItem]): Vector[Offer] = {
     val proxyRequired = appConfigService.properties("marketplaceProvidersImageProxyRequired").indexOf(BestBuy) != -1
-
-    val list = items.map(
-      item =>
-        new Offer(
-          buildProductId(item),
-          if (item.upc.isDefined) Some(item.upc.get.toString) else None,
-          item.name,
-          BestBuy,
-          item.url.getOrElse(""),
-          appConfigService.buildImgUrlExternal(item.image, proxyRequired),
-          appConfigService.buildImgUrl(Some("best-buy-logo.png")),
-          item.salePrice,
-          buildCategoryPath(item.categoryPath),
-          item.customerReviewAverage.getOrElse(0.0f),
-          item.customerReviewCount.getOrElse(0)
-      )
-    )
-    list
+    items.map(buildOffer(_, proxyRequired))
   }
 
   private def buildProductId(item: ProductItem): String = {
-    if (item.productId.isDefined) {
-      item.productId.get.toString
+    if (item.upc.isDefined) {
+      item.upc.get.toString
     } else if (item.sku.isDefined) {
       item.sku.get.toString
     } else {
