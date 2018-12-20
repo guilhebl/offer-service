@@ -44,12 +44,16 @@ lazy val root = (project in file("."))
     scalaSource in GatlingTest := baseDirectory.value / "/gatling/simulation"
   )
 
-// Documentation for this project:
-//    sbt "project docs" "~ paradox"
-//    open docs/target/paradox/site/index.html
-
+// JVM memory tuning
 javaOptions in Universal ++= Seq(
-  // JVM memory tuning
   "-J-Xmx2056m",
   "-J-Xms1024m"
 )
+
+// Documentation for this project:
+//    sbt "project docs" "~ paradox"
+//    open docs/target/paradox/site/index.html
+lazy val docs = (project in file("docs")).enablePlugins(ParadoxPlugin).
+  settings(
+    paradoxProperties += ("download_url" -> "https://github.com/guilhebl/offer-service")
+  )
