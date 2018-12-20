@@ -39,4 +39,10 @@ class DateUtilSpec extends UnitSpec {
     assert(!DateUtil.isWithinRange(midDate, startDate, endDate))
   }
 
+  "Parse Date" should "be valid" in {
+    val dateString = "2018-12-13T10:00:03.812Z"
+    val result = DateUtil.parseLocalDateTime(dateString)
+    assert(result.toString == "2018-12-13T10:00:03.812")
+  }
+
 }

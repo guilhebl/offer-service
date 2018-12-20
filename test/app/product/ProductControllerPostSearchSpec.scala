@@ -1,4 +1,4 @@
-package app.product.functional
+package app.product
 
 import common.BaseDomainTest
 import common.MockBaseUtil._
@@ -29,7 +29,6 @@ import scala.xml.XML
   * expects to query external Trending APIs for some external clients
   * and use default search values for others that don't have a trending API available.
   *
-  * @author gui
   */
 class ProductControllerPostSearchSpec extends BaseDomainTest {
 

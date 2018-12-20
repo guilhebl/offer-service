@@ -18,10 +18,10 @@ class RequestMonitorRateLimiterImpl @Inject()(appConfigService: AppConfigService
 
   private val logger = Logger(this.getClass)
 
-  val WalmartMaxCapacity = appConfigService.properties("walmartUSMaxCapacity").toInt
-  val EbayUSMaxCapacity = appConfigService.properties("ebayUSMaxCapacity").toInt
-  val BestbuyUSMaxCapacity = appConfigService.properties("bestbuyUSMaxCapacity").toInt
-  val AmazonUSMaxCapacity = appConfigService.properties("amazonUSMaxCapacity").toInt
+  val WalmartMaxCapacity = appConfigService.properties("walmartUSMaxCapacity").toDouble
+  val EbayUSMaxCapacity = appConfigService.properties("ebayUSMaxCapacity").toDouble
+  val BestbuyUSMaxCapacity = appConfigService.properties("bestbuyUSMaxCapacity").toDouble
+  val AmazonUSMaxCapacity = appConfigService.properties("amazonUSMaxCapacity").toDouble
 
   val map = mutable.Map[String, RateLimiter](
     Walmart -> RateLimiter.create(WalmartMaxCapacity),
@@ -36,25 +36,25 @@ class RequestMonitorRateLimiterImpl @Inject()(appConfigService: AppConfigService
         isRequestPossible(
           Walmart,
           appConfigService.properties("walmartUSRequestMaxTries").toInt,
-          appConfigService.properties("walmartUSRequestWaitInterval").toInt
+          appConfigService.properties("walmartUSRequestWaitInterval").toLong
         )
       case Ebay =>
         isRequestPossible(
           Ebay,
           appConfigService.properties("ebayUSRequestMaxTries").toInt,
-          appConfigService.properties("eBayUSRequestWaitInterval").toInt
+          appConfigService.properties("eBayUSRequestWaitInterval").toLong
         )
       case BestBuy =>
         isRequestPossible(
           BestBuy,
           appConfigService.properties("bestbuyUSRequestMaxTries").toInt,
-          appConfigService.properties("bestbuyUSRequestWaitInterval").toInt
+          appConfigService.properties("bestbuyUSRequestWaitInterval").toLong
         )
       case Amazon =>
         isRequestPossible(
           Amazon,
           appConfigService.properties("amazonUSRequestMaxTries").toInt,
-          appConfigService.properties("amazonUSRequestWaitInterval").toInt
+          appConfigService.properties("amazonUSRequestWaitInterval").toLong
         )
       case _ => false
     }

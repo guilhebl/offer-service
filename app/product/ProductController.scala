@@ -1,6 +1,4 @@
 package product
-
-import common.util.FormMappingUtil._
 import javax.inject.Inject
 import play.api.data.Form
 import play.api.libs.json.Json
@@ -8,6 +6,7 @@ import play.api.mvc._
 import product.model.{ListRequest, NameValue}
 
 import scala.concurrent.{ExecutionContext, Future}
+import play.api.data.Forms._
 
 /**
   * Takes HTTP requests and produces JSON.
@@ -16,7 +15,6 @@ class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: 
     extends ProductBaseController(cc) {
 
   private val searchRequest: Form[ListRequest] = {
-    import play.api.data.Forms._
     Form(
       mapping(
         "searchColumns" -> vector(

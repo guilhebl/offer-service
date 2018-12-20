@@ -1,4 +1,4 @@
-package app.product.functional
+package app.product
 
 import common.BaseDomainTest
 import common.MockBaseUtil._

@@ -1,4 +1,4 @@
-package app.product.functional
+package app.product
 
 import common.BaseDomainTest
 import common.MockBaseUtil._
@@ -13,8 +13,10 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import play.api.mvc.Results.Ok
-import play.api.test.Helpers.GET
+import play.api.test.FakeRequest
+import play.api.test.Helpers.{GET, HOST, contentAsString, route}
 import product.marketplace.amazon.AmazonRequestHelper
+import play.api.test.CSRFTokenHelper._
 
 import scala.collection.mutable.HashMap
 import scala.io.Source
@@ -57,7 +59,7 @@ class HomeControllerSpec extends BaseDomainTest with GuiceOneServerPerSuite with
   "The OneBrowserPerTest trait" must {
     "provide a web driver" in {
       go to s"http://localhost:$port/"
-      pageTitle mustBe "Search Prod REST API"
+      pageTitle mustBe "searchprod REST API"
     }
   }
 

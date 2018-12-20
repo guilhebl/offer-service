@@ -107,7 +107,7 @@ class MarketplaceRepositoryImpl @Inject()(
     * Internal search method called by both search modes (full and simple)
     *
     * @param req param
-    * @param all if full search
+    * @param f search function
     * @return result
     */
   private def search(req: ListRequest, f: (String, ListRequest) => Future[Option[OfferList]]): Future[Option[OfferList]] = {

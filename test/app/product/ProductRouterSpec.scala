@@ -1,4 +1,4 @@
-package app.product.unit
+package app.product
 
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec

@@ -1,7 +1,7 @@
 package common.util
 
 import java.text.SimpleDateFormat
-import java.time.{Instant, LocalDateTime, LocalTime, ZoneId}
+import java.time._
 import java.util.{Calendar, Date, TimeZone}
 
 import org.joda.time.{DateTime, DateTimeZone}
@@ -56,6 +56,13 @@ object DateUtil {
     if (date == "") None
     else Some(df.parse(date))
   }
+
+  /**
+    * Gets date from string
+    * @param iso8601 iso8601 format text input date string
+    * @return
+    */
+  def parseLocalDateTime(iso8601: String): LocalDateTime = ZonedDateTime.parse(iso8601).toLocalDateTime
 
   /**
     *

@@ -20,7 +20,7 @@ object IpAddressUtil {
         if (n < 0 || n > 255) {
           None
         } else {
-          num = num + ((n % 256) * Math.pow(256, power)).toLong
+          num = num + ((n % 256) * Math.pow(256, power.toDouble)).toLong
           i += 1
         }
       }
@@ -34,6 +34,6 @@ object IpAddressUtil {
     bytes(1) = ((ip & 0x00ff0000) >> 16).toByte
     bytes(2) = ((ip & 0x0000ff00) >> 8).toByte
     bytes(3) = (ip & 0x000000ff).toByte
-    InetAddress.getByAddress(bytes).getHostAddress()
+    InetAddress.getByAddress(bytes).getHostAddress
   }
 }

@@ -3,7 +3,7 @@ import common.cache.{RedisCacheService, RedisCacheServiceImpl}
 import common.config.{AppConfigService, AppConfigServiceImpl}
 import common.db.{MongoDbService, MongoDbServiceImpl}
 import common.email.{EmailService, EmailServiceImpl}
-import common.monitor.{RequestMonitor, RequestMonitorImpl, RequestMonitorRateLimiterImpl}
+import common.monitor.{RequestMonitor, RequestMonitorImpl}
 import common.scheduler.EmailTask
 import geo.{GeolocationRepository, GeolocationRepositoryImpl}
 import javax.inject._
