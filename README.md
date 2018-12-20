@@ -1,8 +1,4 @@
-# Play REST API
-
-[![Build Status](https://travis-ci.org/playframework/play-scala-rest-api-example.svg?branch=2.6.x)](https://travis-ci.org/playframework/play-scala-rest-api-example)
-
-This is the example project for [Making a REST API in Play](http://developer.lightbend.com/guides/play-rest-api/index.html).
+# Offer Service
 
 ## Appendix
 
@@ -23,37 +19,17 @@ Play will start up on the HTTP port at <http://localhost:9000/>.   You don't nee
 If you call the same URL from the command line, you’ll see JSON. Using httpie, we can execute the command:
 
 ```bash
-http --verbose http://localhost:9000/v1/posts
-```
-
-and get back:
-
-```routes
-GET /v1/posts HTTP/1.1
-```
-
-Likewise, you can also send a POST directly as JSON:
-
-```bash
-http --verbose POST http://localhost:9000/v1/posts title="hello" body="world"
-```
-
-and get:
-
-```routes
-POST /v1/posts HTTP/1.1
+http --verbose http://localhost:9000/api/v1/products
 ```
 
 ### Load Testing
 
-The best way to see what Play can do is to run a load test.  We've included Gatling in this test project for integrated load testing.
-
-Start Play in production mode, by [staging the application](https://www.playframework.com/documentation/2.5.x/Deploying) and running the play script:s
+We've included Gatling in this test project for integrated load testing.
 
 ```bash
 sbt stage
 cd target/universal/stage
-./bin/play-scala-rest-api-example -Dplay.http.secret.key=some-long-key-that-will-be-used-by-your-application
+./bin/offer-service -Dplay.http.secret.key=some-long-key-that-will-be-used-by-your-application
 ```
 
 Then you'll start the Gatling load test up (it's already integrated into the project):
