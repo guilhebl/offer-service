@@ -8,15 +8,15 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
+import product.marketplace.common.BaseMarketplaceRepository
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.MarketplaceRepository
 import product.marketplace.ebay.model.{EbayProductDetailResponse, EbaySearchResponse, SearchResultItem}
 import product.model._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait EbayRepository extends MarketplaceRepository
+trait EbayRepository extends BaseMarketplaceRepository
 
 @Singleton
 class EbayRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)(

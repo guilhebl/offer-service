@@ -2,12 +2,11 @@ package common.scheduler
 
 import akka.actor.ActorSystem
 import common.config.AppConfigService
-import common.email.EmailService
-import common.email.model.EmailRequest
 import common.executor.RepositoryDispatcherContext
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.inject.ApplicationLifecycle
+import product.marketplace.common.MarketplaceRepository
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -15,6 +14,7 @@ import scala.concurrent.{Await, Future}
 @Singleton
 class MongoDbCleanerTask @Inject()(
                            appConfigService: AppConfigService,
+                           marketplaceRepository: MarketplaceRepository,
                            actorSystem: ActorSystem,
                            lifecycle: ApplicationLifecycle
                          )(implicit executionContext: RepositoryDispatcherContext) {
@@ -28,7 +28,7 @@ class MongoDbCleanerTask @Inject()(
     logger.info(s"MongoDb Cleanup Job starting... job enabled: $isEnabled")
 
     if (isEnabled) {
-
+      marketplaceRepository.cleanUpDatabase()
     }
     logger.info(s"MongoDb Cleanup Job completed")
   }

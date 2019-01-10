@@ -9,15 +9,15 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
+import product.marketplace.common.BaseMarketplaceRepository
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.MarketplaceRepository
 import product.marketplace.walmart.model.{WalmartSearchBaseResponse, WalmartSearchItem, WalmartSearchResponse, WalmartTrendingSearchResponse}
 import product.model._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait WalmartRepository extends MarketplaceRepository
+trait WalmartRepository extends BaseMarketplaceRepository
 
 @Singleton
 class WalmartRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)(

@@ -1,12 +1,12 @@
 package product
 import javax.inject.Inject
 import play.api.data.Form
+import play.api.data.Forms._
 import play.api.libs.json.Json
 import play.api.mvc._
 import product.model.{ListRequest, NameValue}
 
 import scala.concurrent.{ExecutionContext, Future}
-import play.api.data.Forms._
 
 /**
   * Takes HTTP requests and produces JSON.

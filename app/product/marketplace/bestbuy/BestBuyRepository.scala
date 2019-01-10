@@ -9,15 +9,15 @@ import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
 import product.marketplace.bestbuy.model._
+import product.marketplace.common.BaseMarketplaceRepository
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.MarketplaceRepository
 import product.model._
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait BestBuyRepository extends MarketplaceRepository
+trait BestBuyRepository extends BaseMarketplaceRepository
 
 @Singleton
 class BestBuyRepositoryImpl @Inject()(ws: WSClient, appConfigService: AppConfigService, requestMonitor: RequestMonitor)(

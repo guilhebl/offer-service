@@ -6,7 +6,6 @@ import common.cache.RedisCacheService
 import common.config.AppConfigService
 import common.db.MongoDbService
 import common.executor.RepositoryDispatcherContext
-import common.executor.model.BaseDomainRepository
 import common.log.ThreadLogger
 import common.util.CollectionUtil._
 import common.util.DateUtil
@@ -25,7 +24,6 @@ import product.marketplace.ebay.EbayRepository
 import product.marketplace.walmart.WalmartRepository
 import product.model._
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
@@ -33,39 +31,8 @@ import scala.language.postfixOps
 /**
   * A pure non-blocking interface
   */
-trait MarketplaceRepository extends BaseDomainRepository {
-  def search(req: ListRequest): Future[Option[OfferList]]
-  def searchAll(req: ListRequest): Future[Option[OfferList]]
-  def getProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]]
-
-  /**
-    * Base algorithm for recursive searching
-    *
-    * @param acc accumulator
-    * @param request params
-    * @param page current page
-    * @param timeout timeoutUsed that will be used to wait for this call
-    * @return result of single iteration or final result
-    */
-  protected def searchAll(acc: OfferList, request: ListRequest, timeout: Int): Future[Option[OfferList]] = {
-    @tailrec
-    def searchOffers(acc: OfferList, request: ListRequest, page: Int, timeout: Int): Future[Option[OfferList]] = {
-      ThreadLogger.log(s"searchAll - request: $request, $page")
-      val future = search(ListRequest.fromPage(request, page))
-      val result = Await.result(future, timeout millis)
-      val merged = OfferList.merge(Some(acc), result)
-
-      // verify if above last page
-      if (page + 1 > merged.get.summary.pageCount) {
-        Future.successful(merged)
-      } else {
-        searchOffers(merged.get, request, page + 1, timeout)
-      }
-    }
-
-    searchOffers(acc, request, 1, timeout)
-  }
-
+trait MarketplaceRepository extends BaseMarketplaceRepository {
+  def cleanUpDatabase(): Unit
 }
 
 @Singleton
@@ -300,6 +267,12 @@ class MarketplaceRepositoryImpl @Inject()(
 
     val timeout = appConfigService.properties("mongoDb.defaultTimeout")
     Await.result(f, timeout.toInt millis)
+  }
+
+  override def cleanUpDatabase(): Unit = {
+    val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+    val rowsDeleted = Await.result(deleteOldOfferPriceLogs(), timeout.toInt millis)
+    logger.info(s"cleanUp Database, rows deleted: $rowsDeleted")
   }
 
   /**

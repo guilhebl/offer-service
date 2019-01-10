@@ -7,8 +7,8 @@ import common.monitor.RequestMonitor
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.ws._
+import product.marketplace.common.BaseMarketplaceRepository
 import product.marketplace.common.MarketplaceConstants._
-import product.marketplace.common.MarketplaceRepository
 import product.model._
 
 import scala.collection.mutable
@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.xml.{Elem, NodeSeq}
 
-trait AmazonRepository extends MarketplaceRepository
+trait AmazonRepository extends BaseMarketplaceRepository
 
 @Singleton
 class AmazonRepositoryImpl @Inject()(

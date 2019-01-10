@@ -1,15 +1,12 @@
 package common.encrypt
 
-import java.security.{MessageDigest, SecureRandom}
+import java.security.SecureRandom
 import java.util.Base64
 
 import common.encrypt.model.EncryptionPair
 import javax.crypto.Cipher
-import javax.crypto.spec.{GCMParameterSpec, IvParameterSpec, SecretKeySpec}
-import org.apache.commons.codec.binary.Hex
+import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
 import play.api.Logger
-
-import scala.util.Random
 
 object EncryptUtil {
 
