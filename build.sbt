@@ -20,12 +20,7 @@ libraryDependencies += "commons-codec" % "commons-codec" % "1.3"
 libraryDependencies += "com.typesafe.play" %% "play-mailer" % "6.0.1"
 libraryDependencies += "com.typesafe.play" %% "play-mailer-guice" % "6.0.1"
 
-libraryDependencies += "org.sangria-graphql" %% "sangria" % "1.4.2"
-libraryDependencies += "org.sangria-graphql" %% "sangria-slowlog" % "0.1.8"
-libraryDependencies += "org.sangria-graphql" %% "sangria-play-json" % "1.0.4"
-
-// test dependencies
-libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.0-RC1" % Test
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.0-RC2" % Test
 libraryDependencies += "io.gatling.highcharts" % "gatling-charts-highcharts" % "3.0.1.1" % Test
 libraryDependencies += "io.gatling" % "gatling-test-framework" % "3.0.1.1" % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
@@ -46,7 +41,7 @@ lazy val root = (project in file("."))
 
 // JVM memory tuning
 javaOptions in Universal ++= Seq(
-  "-J-Xmx2056m",
+  "-J-Xmx12056m",
   "-J-Xms1024m"
 )
 

@@ -48,7 +48,6 @@ class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: 
   def searchOffers(query: String): Action[AnyContent] = ProductAction.async { implicit request =>
     productResourceHandler.search(ListRequest.buildFromQuery(query)).map { offerList =>
       Ok(Json.toJson(offerList)).enableCors
-      //Ok(Json.toJson(offerList))
     }
   }
 

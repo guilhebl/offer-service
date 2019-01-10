@@ -77,7 +77,7 @@ class AmazonRepositoryImpl @Inject()(
   }
 
   override def getProductDetail(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
-    Logger.info(s"getProductDetail: $id, $source")
+    logger.info(s"getProductDetail: $id, $source")
     val idTypeAmazon = filterIdType(idType)
 
     // try to acquire lock from request Monitor
