@@ -20,7 +20,7 @@ libraryDependencies += "commons-codec" % "commons-codec" % "1.3"
 libraryDependencies += "com.typesafe.play" %% "play-mailer" % "6.0.1"
 libraryDependencies += "com.typesafe.play" %% "play-mailer-guice" % "6.0.1"
 
-libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.0-RC2" % Test
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.1" % Test
 libraryDependencies += "io.gatling.highcharts" % "gatling-charts-highcharts" % "3.0.1.1" % Test
 libraryDependencies += "io.gatling" % "gatling-test-framework" % "3.0.1.1" % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
