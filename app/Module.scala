@@ -4,7 +4,7 @@ import common.config.{AppConfigService, AppConfigServiceImpl}
 import common.db.{MongoDbService, MongoDbServiceImpl}
 import common.email.{EmailService, EmailServiceImpl}
 import common.monitor.{RequestMonitor, RequestMonitorImpl}
-import common.scheduler.EmailTask
+import common.scheduler.ProductTrackingTask
 import geo.{GeolocationRepository, GeolocationRepositoryImpl}
 import javax.inject._
 import net.codingwell.scalaguice.ScalaModule
@@ -38,6 +38,6 @@ class Module(environment: Environment, configuration: Configuration)
     bind[MongoDbService].to[MongoDbServiceImpl].in[Singleton]
     bind[RedisCacheService].to[RedisCacheServiceImpl].in[Singleton]
     bind[EmailService].to[EmailServiceImpl]
-    bind(classOf[EmailTask]).asEagerSingleton()
+    bind(classOf[ProductTrackingTask]).asEagerSingleton()
   }
 }

@@ -11,25 +11,27 @@ import product.marketplace.common.MarketplaceRepository
 import scala.concurrent.duration._
 
 @Singleton
-class MongoDbCleanerTask @Inject()(
-                           appConfigService: AppConfigService,
+class ProductTrackingTask @Inject()(
                            marketplaceRepository: MarketplaceRepository,
+                           appConfigService: AppConfigService,
                            actorSystem: ActorSystem,
                            lifecycle: ApplicationLifecycle
-                         )(implicit executionContext: RepositoryDispatcherContext) {
+                         )(
+                           implicit executionContext: RepositoryDispatcherContext
+                         ) {
 
   private lazy val logger = Logger(this.getClass)
-  private lazy val intervalSeconds = appConfigService.properties("scheduler.job.db.cleanup.frequency.seconds").toInt
+  private lazy val intervalSeconds = appConfigService.properties("scheduler.job.frequency.seconds").toInt
 
   actorSystem.scheduler.schedule(initialDelay = intervalSeconds.seconds, interval = intervalSeconds.second) {
 
-    val isEnabled = appConfigService.properties("scheduler.job.db.cleanup.enabled").toBoolean
-    logger.info(s"MongoDb Cleanup Job starting... job enabled: $isEnabled")
+    val isEnabled = appConfigService.properties("offer.snapshot.upc.tracker.enabled").toBoolean
+    logger.info(s"Product tracking Job starting... enabled: $isEnabled")
 
     if (isEnabled) {
-      marketplaceRepository.cleanStaleProductTrackings()
+     // marketplaceRepository.syncTrackedProducts()
     }
-    logger.info(s"MongoDb Cleanup Job completed")
+    logger.info(s"Product tracking finished")
   }
 
 }

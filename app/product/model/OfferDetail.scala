@@ -7,7 +7,7 @@ case class OfferDetail (
     description: String,
     attributes: Vector[NameValue],
     productDetailItems: Vector[OfferDetailItem],
-    priceLogs: Vector[OfferPriceLog]
+    priceLogs: Vector[OfferPriceLog] = Vector.empty[OfferPriceLog]
 )
 
 object OfferDetail {

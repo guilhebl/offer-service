@@ -1,6 +1,6 @@
 package product.marketplace.common
 
-import java.util.Calendar
+import java.time.Instant
 
 import common.cache.RedisCacheService
 import common.config.AppConfigService
@@ -12,9 +12,10 @@ import common.util.DateUtil
 import common.util.EntityValidationUtil._
 import common.util.StringCommonUtil._
 import javax.inject.{Inject, Singleton}
-import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Sorts.descending
+import org.mongodb.scala.model.Updates._
+import org.mongodb.scala.{MongoCollection, _}
 import play.api.Logger
 import play.api.libs.json.{Json, Writes}
 import product.marketplace.amazon.AmazonRepository
@@ -32,7 +33,8 @@ import scala.language.postfixOps
   * A pure non-blocking interface
   */
 trait MarketplaceRepository extends BaseMarketplaceRepository {
-  def cleanUpDatabase(): Unit
+  def syncTrackedProducts(): Unit
+  def cleanStaleProductTrackings(): Unit
 }
 
 @Singleton
@@ -49,6 +51,7 @@ class MarketplaceRepositoryImpl @Inject()(
 
   private val logger = Logger(this.getClass)
   private val CollectionOfferPriceLog = "offerLog"
+  private val CollectionProductTracking = "productTracking"
 
   /**
     *  Searches in first page only
@@ -121,7 +124,9 @@ class MarketplaceRepositoryImpl @Inject()(
     val asc = request.sortOrder.getOrElse("asc").equals("asc")
     val sorted = sortList(offerList, country, keyword, sortBy, asc)
 
-    if (sorted.list.nonEmpty && appConfigService.properties("offer.snapshot.upc.tracker.enabled").toBoolean) insertOfferPriceLogs(sorted)
+    if (sorted.list.nonEmpty && appConfigService.properties("offer.snapshot.upc.tracker.enabled").toBoolean)
+      updateProductTrackings(sorted)
+
     sorted
   }
 
@@ -160,7 +165,50 @@ class MarketplaceRepositoryImpl @Inject()(
   }
 
   /**
-    * check if DB is enabled and saves record
+    * check if DB is enabled and updates product tracking info for existing products in DB
+    */
+  override def syncTrackedProducts(): Unit = {
+    logger.info("sync products tracked")
+    val collection: MongoCollection[ProductTracking] = mongoDbService.getDatabase.getCollection(CollectionProductTracking)
+
+    if (appConfigService.properties("db.enabled").toBoolean) {
+      val future = collection.find(equal("active", true)).toFuture()
+      val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+      val timeoutApi = appConfigService.properties("marketplaceAggregatorTimeout")
+      val upcs = Await.result(future, timeout.toInt millis).map(_.upc)
+
+      upcs.map(upc => {
+        val offerPriceLog = getLastOfferPriceLog(upc)
+        (upc, offerPriceLog.get.source)
+      }).foreach(x => {
+        val futureDetail = getProductDetailWithItems(x._1, Upc, x._2)
+        val offerDetail = Await.result(futureDetail, timeoutApi.toInt millis)
+        if (offerDetail.isDefined) updateProductDetailTracking(offerDetail.get)
+      })
+    }
+  }
+
+  /**
+    * check if DB is enabled and updates product tracking (analytics) info for single product
+    * - a snapshot of the price of the object in time
+    *
+    * @param item OfferList
+    */
+  private def updateProductDetailTracking(item: OfferDetail): Unit = {
+    val upc = item.offer.upc.get
+    logger.info(s"Update product trackings for item: $upc")
+    if (appConfigService.properties("db.enabled").toBoolean) {
+      val now = Instant.now()
+      updateProductTracking(upc)
+      insertOfferPriceLog(OfferPriceLog(upc, item.offer.partyName, item.offer.price, now))
+      item.productDetailItems.foreach(x => {
+        insertOfferPriceLog(OfferPriceLog(upc, x.partyName, x.price, now))
+      })
+    }
+  }
+
+  /**
+    * check if DB is enabled and updates product tracking info for list of products
     *
     * inserts a log of each single offer in list
     *
@@ -169,12 +217,15 @@ class MarketplaceRepositoryImpl @Inject()(
     *
     * @param item OfferList
     */
-  private def insertOfferPriceLogs(item: OfferList): Unit = {
+  private def updateProductTrackings(item: OfferList): Unit = {
+    logger.info("Update product trackings for list")
     if (appConfigService.properties("db.enabled").toBoolean) {
-      logger.info("Insert OfferPriceLogs")
-      val cal = Calendar.getInstance()
+      val now = Instant.now()
       val offersWithUpc = item.list.filter(_.upc.isDefined)
-      offersWithUpc.foreach(x => insertOfferPriceLog(OfferPriceLog(x.upc.get, x.partyName, x.price, cal.getTimeInMillis)))
+      offersWithUpc.foreach(x => {
+        updateProductTracking(x.upc.get)
+        insertOfferPriceLog(OfferPriceLog(x.upc.get, x.partyName, x.price, now))
+      })
     }
   }
 
@@ -209,11 +260,18 @@ class MarketplaceRepositoryImpl @Inject()(
     * @param upc upc to search in DB
     * @return
     */
-  private def getLastOfferPriceLog(source: String, upc: String): Option[OfferPriceLog] = {
+  private def getLastOfferPriceLog(upc: String, source: Option[String] = None): Option[OfferPriceLog] = {
     if (appConfigService.properties("db.enabled").toBoolean) {
       val collection: MongoCollection[OfferPriceLog] = mongoDbService.getDatabase.getCollection(CollectionOfferPriceLog)
+
+      val filter = if (source.isDefined) {
+        and(equal("source", source.get), equal("upc", upc))
+      } else {
+        equal("upc", upc)
+      }
+
       val f = collection
-        .find(and(equal("source", source), equal("upc", upc)))
+        .find(filter)
         .sort(descending("timestamp"))
         .limit(1)
         .toFuture()
@@ -225,6 +283,47 @@ class MarketplaceRepositoryImpl @Inject()(
     } else {
       None
     }
+  }
+
+  /**
+    * Gets existing Product Tracking info for Upc
+    * @param upc upc to search in DB
+    * @return
+    */
+  private def getProductTracking(upc: String): Option[ProductTracking] = {
+    if (appConfigService.properties("db.enabled").toBoolean) {
+      val collection: MongoCollection[ProductTracking] = mongoDbService.getDatabase.getCollection(CollectionProductTracking)
+      val f = collection
+        .find(equal("upc", upc))
+        .toFuture()
+
+      val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+      val result = Await.result(f, timeout.toInt millis)
+      result.headOption
+    } else {
+      None
+    }
+  }
+
+  /**
+    * Updates information about product tracking for this offer
+    *
+    * @param upc upc string
+    */
+  private def updateProductTracking(upc: String): Unit = {
+    logger.info(s"Update tracking: $upc")
+    val collection: MongoCollection[ProductTracking] = mongoDbService.getDatabase.getCollection(CollectionProductTracking)
+    val now = Instant.now()
+
+    val productTracking = getProductTracking(upc)
+    val future = if (productTracking.isDefined) {
+      collection.updateOne(equal("upc", upc), set("lastSeen", now)).toFuture()
+    } else {
+      val first = new ProductTracking(upc, now, now, active = true)
+      collection.insertOne(first).toFuture()
+    }
+    val timeout = appConfigService.properties("mongoDb.defaultTimeout")
+    Await.result(future, timeout.toInt millis)
   }
 
   /**
@@ -241,9 +340,9 @@ class MarketplaceRepositoryImpl @Inject()(
     val upc = item.upc
     logger.info(s"Insert OfferPrice Log $source, $upc")
 
-    val lastPriceLog = getLastOfferPriceLog(source, upc)
+    val lastPriceLog = getLastOfferPriceLog(upc, Some(source))
     val cycleSeconds = appConfigService.properties("offer.priceLog.timeWindow").toLong
-    if (lastPriceLog.isDefined && !DateUtil.isBeforeSeconds(lastPriceLog.get.timestamp, cycleSeconds)) {
+    if (lastPriceLog.isDefined && !DateUtil.isBeforeSeconds(lastPriceLog.get.timestamp.toEpochMilli, cycleSeconds)) {
       logger.info(s"Skip: $source, $upc")
     } else {
       insertOfferPriceLogDb(item)
@@ -269,7 +368,7 @@ class MarketplaceRepositoryImpl @Inject()(
     Await.result(f, timeout.toInt millis)
   }
 
-  override def cleanUpDatabase(): Unit = {
+  override def cleanStaleProductTrackings(): Unit = {
     val timeout = appConfigService.properties("mongoDb.defaultTimeout")
     val rowsDeleted = Await.result(deleteOldOfferPriceLogs(), timeout.toInt millis)
     logger.info(s"cleanUp Database, rows deleted: $rowsDeleted")
@@ -409,15 +508,35 @@ class MarketplaceRepositoryImpl @Inject()(
       if (json.isDefined) {
         Future.successful(Some(Json.parse(json.get).as[OfferDetail]))
       } else {
-        val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
-        fetchProductDetail(id, idType, source).map(
-          detail =>
-            buildEntityResult(
-              cacheKey,
-              Await.result(fetchDetailItems(detail, Upc), timeout.toInt millis)
-          )
-        )
+        val future = getProductDetailWithItems(id, idType, source)
+        future.map( x => buildEntityResult(
+          cacheKey,
+          fetchProductTrackingInfo(x)
+        ))
       }
+    }
+  }
+
+  private def getProductDetailWithItems(id: String, idType: String, source: String): Future[Option[OfferDetail]] = {
+    logger.info(s"Marketplace get - params:  $id, $idType, $source")
+    val timeout = appConfigService.properties("marketplaceAggregatorTimeout")
+    fetchProductDetail(id, idType, source).map(detail =>
+      Await.result(fetchDetailItems(detail, Upc), timeout.toInt millis)
+    )
+  }
+
+  /**
+  * Enriches product detail with product tracking info
+    * @param detail offer detail
+    * @return
+    */
+  private def fetchProductTrackingInfo(detail: Option[OfferDetail]): Option[OfferDetail] = {
+    logger.info(s"fetchProductTrackingInfo")
+    if (detail.isDefined && detail.get.offer.upc.isDefined) {
+      val offerPriceLogs = getOfferPriceLogs(detail.get.offer.upc.get, appConfigService.properties("offer.priceLog.getDetail.limit").toInt)
+      Some(OfferDetail(detail.get.offer, detail.get.description, detail.get.attributes, detail.get.productDetailItems, offerPriceLogs))
+    } else {
+      detail
     }
   }
 
@@ -429,7 +548,6 @@ class MarketplaceRepositoryImpl @Inject()(
     *
     * @param detail
     * @param idType
-    * @param country
     * @return
     */
   private def fetchDetailItems(
@@ -440,8 +558,7 @@ class MarketplaceRepositoryImpl @Inject()(
     val detailWithItems = getProductDetailItems(detail, idType)
     detailWithItems.map { x =>
       if (x.isDefined && x.get.offer.upc.isDefined) {
-        val offerPriceLogs = getOfferPriceLogs(x.get.offer.upc.get, appConfigService.properties("offer.priceLog.getDetail.limit").toInt)
-        Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems, offerPriceLogs))
+        Some(OfferDetail(x.get.offer, x.get.description, x.get.attributes, x.get.productDetailItems))
       } else {
         x
       }
