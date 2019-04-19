@@ -1,57 +1,32 @@
 pull_request_rules:
-  - name: automatic merge on CI success require review
+  - name: Merge PRs that are ready
     conditions:
-      - status-success=continuous-integration/travis-ci/pr
+      - status-success=Travis CI - Pull Request
+      - status-success=typesafe-cla-validator
       - "#approved-reviews-by>=1"
+      - "#review-requested=0"
       - "#changes-requested-reviews-by=0"
-      - label=merge-when-green
-      - label!=block-merge
+      - label!=status:block-merge
     actions:
       merge:
         method: squash
         strict: smart
 
-  - name: automatic merge on CI success for TemplateControl
+  - name: Merge TemplateControl's PRs that are ready
     conditions:
-      - status-success=continuous-integration/travis-ci/pr
-      - label=merge-when-green
-      - label=template-control
-      - label!=block-merge
+      - status-success=Travis CI - Pull Request
+      - "#review-requested=0"
+      - "#changes-requested-reviews-by=0"
+      - label!=status:block-merge
+      - label=status:merge-when-green
+      - label!=status:block-merge
     actions:
       merge:
         method: squash
         strict: smart
 
-  # delete any branch when already merged
-  # doesn't matter if marked with labels or not
-  - name: delete branch after merge
+  - name: Delete the PR branch after merge
     conditions:
       - merged
     actions:
       delete_head_branch: {}
-
-  # delete 'merge-when-green' label if present and merged
-  - name: remove label after merge
-    conditions:
-      - merged
-      - label=merge-when-green
-    actions:
-      label:
-        remove: [merge-when-green]
-
-  # delete 'template-control' label if present and merged
-  - name: remove label after merge
-    conditions:
-      - merged
-      - label=template-control
-    actions:
-      label:
-        remove: [template-control]
-
-  - name: auto add wip
-    conditions:
-      # match a few flavours of wip
-      - title~=^(\[wip\]( |:) |\[WIP\]( |:) |wip( |:) |WIP( |:)).*
-    actions:
-      label:
-        add: ["block-merge"]
